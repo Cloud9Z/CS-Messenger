@@ -1,0 +1,66 @@
+package gui;
+
+import java.awt.EventQueue;
+import java.util.Observer;
+
+import javax.swing.JFrame;/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+import gui.dialogues.AreYouSure;
+import gui.dialogues.accountCreated;
+import gui.windows.HistoryWindow;
+import gui.windows.LogIn;
+import gui.windows.groupChat;
+import gui.windows.loggedIn;
+import gui.windows.selectUserHistory;
+import gui.windows.selectUsersGroupChat;
+import gui.windows.signUpScreen;
+import gui.windows.userChat;
+
+/**
+ *
+ * @author violamarku
+ */
+public class Gui extends JFrame{
+        
+    public LogIn guiLogIn = new LogIn();
+    public static LogIn frame = null;
+    public static signUpScreen frame2 = null;
+    public static loggedIn frame3 = null;
+    public static AreYouSure frame4 = null;
+    public static accountCreated frame5 = null;
+    public static selectUsersGroupChat frame6 = null;
+    public static userChat frame7 = null;
+    public static selectUserHistory frame8 = null;
+    public static HistoryWindow frame9 = null;
+    public static groupChat frame10= null;
+    
+    
+   
+    public Gui() {
+		        
+	}
+
+    /**
+     * 
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					frame = new LogIn();
+					frame.setVisible(true);
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+        // TODO code application logic here
+    }
+    
+}

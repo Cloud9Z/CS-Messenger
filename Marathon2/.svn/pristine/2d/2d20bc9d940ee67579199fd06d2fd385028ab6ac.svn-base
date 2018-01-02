@@ -1,0 +1,118 @@
+package gui.dialogues;
+
+// import static gui.Gui.frame;
+// import static gui.Gui.frame2;
+// import static gui.Gui.frame3;
+// import static gui.Gui.frame4;
+
+import java.awt.event.WindowEvent;
+import java.util.Arrays;
+
+import gui.Gui;
+import gui.MessengerGUI;
+
+/**
+ * This class contains the AreYouSure dialog window, where the user is prompted to confirm if they want to log out. If the click the 
+ * logOutYesButton, the current gui will be terminated and a new gui will be generated (with a new logIn frame displayed). 
+ * 
+ */
+public class AreYouSure extends javax.swing.JDialog {
+	
+	private MessengerGUI gui;
+    private javax.swing.JButton cancelLogOut;
+    private javax.swing.JEditorPane jEditorPane1;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton logOutYesButton;
+	
+    /**
+     * Creates new form AreYouSure
+     */
+    public AreYouSure(MessengerGUI gui, java.awt.Frame parent, boolean modal) {
+        super(parent, modal);
+        this.gui = gui;
+        initComponents();
+    }
+
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jEditorPane1 = new javax.swing.JEditorPane();
+        jLabel1 = new javax.swing.JLabel();
+        logOutYesButton = new javax.swing.JButton();
+        cancelLogOut = new javax.swing.JButton();
+
+        jScrollPane1.setViewportView(jEditorPane1);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Log out - Messenger");
+        setLocation(new java.awt.Point(600, 50));
+        setResizable(false);
+
+        jLabel1.setText("Are you sure you want to log out?");
+
+        logOutYesButton.setText("Yes");
+  
+        logOutYesButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                logOutYesButtonActionPerformed(evt);
+            }
+        });
+
+        cancelLogOut.setText("Cancel");
+        cancelLogOut.setAlignmentX(35.0F);
+        cancelLogOut.setAlignmentY(23.0F);
+        
+        cancelLogOut.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cancelLogOutActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(38, 38, 38)
+                        .addComponent(jLabel1))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(27, 27, 27)
+                        .addComponent(cancelLogOut, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(29, 29, 29)
+                        .addComponent(logOutYesButton, javax.swing.GroupLayout.DEFAULT_SIZE, 104, Short.MAX_VALUE)))
+                .addGap(30, 30, 30))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap(42, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addGap(26, 26, 26)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cancelLogOut)
+                    .addComponent(logOutYesButton))
+                .addGap(29, 29, 29))
+        );
+
+        pack();
+    }
+
+    /*
+     * If the logOutYesButton is clicked, the dialog window will be closed and the logOut method will be called.
+     */
+    private void logOutYesButtonActionPerformed(java.awt.event.ActionEvent evt) {
+    	this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+    	gui.logOut();
+    }
+
+    /*
+     * If the user clicks cancelLogOut button, the dialog window will be closed. 
+     */
+    private void cancelLogOutActionPerformed(java.awt.event.ActionEvent evt) {
+    	this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+    }
+
+}

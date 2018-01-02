@@ -1,0 +1,307 @@
+package client;
+
+import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Observer;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import message.Message;
+import message.ProtocolMessage;
+import server.Server;
+import server.ServerProtocol;
+import server.WorkerThread;
+
+
+public class ClientTest {
+	
+	@Test
+	public void testListen1() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52000);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				String signIn = sp.signIn("Login:1");
+				DummyServer.send(signIn);
+				client.logOut();
+				DummyServer.stop();
+			}
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52000);
+		client.listen();
+		String expected = "Login:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen2() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52001);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				String signUp = sp.signUp("Account:1");
+				DummyServer.send(signUp);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52001);
+		client.listen();
+		String expected = "Account:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen3() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52002);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				Set<String> ol = new TreeSet<String>(Arrays.asList(new String[]{"Jasmin","Ashely"}));
+				String onlineList = sp.getOnlineList(ol);
+				DummyServer.send(onlineList);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52002);
+		client.listen();
+		String expected = "Online:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen4() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52003);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"Viola", "Johen"}));
+				LocalDateTime t = LocalDateTime.of(2017, 1, 18, 22, 11);
+				Message m = new Message("Viola", chat, t, "Let's dance");
+				String message = sp.sendMessage(m);
+				DummyServer.send(message);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52003);
+		client.listen();
+		String expected = "Chat:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen5() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52004);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"Viola", "Johen", "Yunxiao"}));
+				String closeGC = sp.closeGroupChat(chat);
+				DummyServer.send(closeGC);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52004);
+		client.listen();
+		String expected = "Chat:2";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen6() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52005);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				String offline = sp.offlineNotification("Goodman");
+				DummyServer.send(offline);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52005);
+		client.listen();
+		String expected = "Offline:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen7() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52006);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				Set<String> c1 = new TreeSet<String>(Arrays.asList(new String[]{"achilles","helen"}));
+				Set<String> c2 = new TreeSet<String>(Arrays.asList(new String[]{"helen","muse","nestor"}));
+				List<Set<String>> historyList = new ArrayList<Set<String>>();
+				historyList.add(c1);
+				historyList.add(c2);
+				String historyL = sp.getHistoryList(historyList);
+				DummyServer.send(historyL);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52006);
+		client.listen();
+		String expected = "History:1";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testListen8() throws IOException {
+		Client client = new Client();
+		final DummyObserver ob = new DummyObserver();
+		new Thread(new Runnable() {
+			public void run() {
+				DummyServer.start(52007);
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				client.addObserver(ob);
+				ServerProtocol sp = new ServerProtocol();
+				List<Message> hist = new ArrayList<Message>();
+				List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+				Set<String> chat = new TreeSet<String>(l);
+				LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+				Message m = new Message("achilles", chat, t, "Off to Troy!");
+				hist.add(m);
+				String historyL = sp.getHistory(hist);
+				DummyServer.send(historyL);
+				client.logOut();
+				DummyServer.stop();
+			}
+			
+		}).start();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		client.connect("localhost", 52007);
+		client.listen();
+		String expected = "History:2";
+		String actual = ob.getResponse();		
+		assertEquals(expected, actual);
+	}
+}

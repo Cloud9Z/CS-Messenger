@@ -1,0 +1,154 @@
+package messenger;
+
+import java.awt.image.PackedColorModel;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Set;
+import java.util.TreeSet;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonException;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonString;
+import javax.json.JsonValue;
+import javax.json.JsonWriter;
+
+/**
+ * 
+ *
+ * @author 
+ * @version 2017-03-09
+ */
+public class ClientProtocol {
+	
+	private static final DateTimeFormatter formatter = 
+			DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm");
+	
+	/**
+	 * 
+	 * @param model
+	 * @return
+	 */
+	private static String makeString(JsonObject model) {
+		String result = "";
+		try(StringWriter strWriter = new StringWriter();
+				JsonWriter jWriter = Json.createWriter(strWriter)) {
+				jWriter.writeObject(model);
+				result = strWriter.toString();
+		} catch (IOException e) {
+				System.err.println("Error while closing StringWriter.");
+				e.printStackTrace();
+		}
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param userName
+	 * @param password
+	 * @return
+	 */
+	public static String signUp(String userName, String password) {
+		JsonObject model= Json.createObjectBuilder()
+				.add("type", "sign-up")
+				.add("userName", userName)
+				.add("password", password)
+				.build();
+		return makeString(model);
+		
+	}
+	
+	/**
+	 * 
+	 * @param userName
+	 * @param password
+	 * @return
+	 */
+	public static String signIn(String userName, String password) {
+		JsonObject model= Json.createObjectBuilder()
+				.add("type", "sign-in")
+				.add("userName", userName)
+				.add("password", password)
+				.build();
+		return makeString(model);
+	}
+	
+	/**
+	 * 
+	 * @param message
+	 * @return
+	 */
+	public static String sendMessage(Message message) {
+		JsonArrayBuilder chat = Json.createArrayBuilder();
+		for(String userName : message.getChat()) {
+			chat.add(userName);
+		}
+		JsonObject model= Json.createObjectBuilder()
+				.add("type", "send-message")
+				.add("sender", message.getSender())
+				.add("chat", chat)
+				.add("timeStamp", message.getTime().format(formatter))
+				.add("text", message.getText())
+				.build();
+		return makeString(model);
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public static String getHistoryList() {
+		JsonObject model= Json.createObjectBuilder()
+				.add("type", "get-history-list")
+				.build();
+		return makeString(model);
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public static String getHistory(Set<String> chat) {
+		JsonArrayBuilder chatArray = Json.createArrayBuilder();
+		for(String userName : chat) {
+			chatArray.add(userName);
+		}
+		JsonObject model= Json.createObjectBuilder()
+				.add("type", "get-history")
+				.add("chat", chatArray)
+				.build();
+		return makeString(model);
+	}
+	
+	public static ProtocolMessage decode(String json) {
+		try(JsonReader reader = Json.createReader(new StringReader(json))) {
+			JsonObject model = reader.readObject();
+			ProtocolMessage pm = new ProtocolMessage();
+			
+			String type = model.getString("type");
+			pm.setType(type);
+			switch(type) {
+			case "sign-up":
+			case "sign-in":
+				pm.setStatus(model.getString("status"));
+			case "send-message":
+				Set<String> chat = new TreeSet<String>();
+				for(JsonValue user : model.getJsonArray("chat")) {
+					chat.add(user.toString());
+				}
+				LocalDateTime time = LocalDateTime.parse(model.getString("time"), formatter);
+				pm.setMessage(new Message(model.getString("sender"), , time, text));
+			}
+		} catch(JsonException je) {
+			System.err.println("Error parsing Json.");
+			je.printStackTrace();
+		}
+		
+	}
+	
+}

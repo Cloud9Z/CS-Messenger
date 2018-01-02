@@ -1,0 +1,241 @@
+package gui.windows;
+
+import java.awt.event.ActionEvent;
+import java.util.Arrays;
+
+import gui.MessengerGUI;
+import gui.dialogues.accountCreated;
+
+/**
+ * This class consists of the sign up to Messenger. The sign up consist in the user input of nickname and password, with a repetition of the password to 
+ * check both passwords are identical. The password should be between 8 to 20 characters and the nickname should be between 4 to 12. It also consists of a 
+ * sign up button and a go back to log in button that takes the user back to the original sign up page. 
+ * 
+ * @author violamarku
+ */
+public class signUpScreen extends javax.swing.JFrame {
+	
+	private MessengerGUI gui;
+	private javax.swing.JButton backToLogIn;
+    private javax.swing.JButton createAccountButton;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JTextField newNickname;
+    private javax.swing.JPasswordField newPassword;
+    private javax.swing.JPasswordField newPasswordCompare;
+    private javax.swing.JLabel passwordCompare;
+	    
+	// String nickname = newNickname.getText();
+	// char[] password = newPassword.getPassword();
+
+    /**
+     * Creates new form signUpScreen.
+     */
+    public signUpScreen(MessengerGUI gui) {
+        this.gui = gui;
+        gui.setSignUpWindow(this);
+    	initComponents();
+    }
+
+    private void initComponents() {
+
+        jLabel1 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        newNickname = new javax.swing.JTextField();
+        jLabel4 = new javax.swing.JLabel();
+        newPassword = new javax.swing.JPasswordField();
+        newPasswordCompare = new javax.swing.JPasswordField();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        passwordCompare = new javax.swing.JLabel();
+        createAccountButton = new javax.swing.JButton();
+        backToLogIn = new javax.swing.JButton();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Sign up - Messenger");
+        setLocation(new java.awt.Point(600, 50));
+        setResizable(false);
+
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/1489281981_Paper-Plane.png")));
+
+        jLabel3.setFont(new java.awt.Font("Lucida Grande", 0, 18));
+        jLabel3.setText("Sign up for Messenger");
+
+        jLabel2.setText("<html>Choose a nickname between \n<br>4 and 12 characters:\n<html>");
+        
+        newNickname.addKeyListener(new java.awt.event.KeyAdapter() { //Key listener used further to determine if user has given any input
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                newNicknameKeyReleased(evt);
+            }
+        });
+        jLabel4.setText("<html>Choose a password between \n<br>8 and 20 characters:\n</html>");
+
+        newPassword.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                newPasswordKeyReleased(evt);
+            }
+        });
+
+        newPasswordCompare.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                newPasswordCompareKeyReleased(evt);
+            }
+        });
+
+        jLabel5.setText("Insert chosen password again:");
+
+        createAccountButton.setText("Create account");
+        createAccountButton.setEnabled(false);
+        createAccountButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	createAccountButtonActionPerformed(evt);
+            }
+        });
+
+        backToLogIn.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/1489282760_Button_Back.png")));
+        backToLogIn.setText("Back to log in");
+        backToLogIn.setToolTipText("");
+        backToLogIn.setBorder(null);
+        backToLogIn.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                backToLogInActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(17, 17, 17)
+                .addComponent(backToLogIn, javax.swing.GroupLayout.PREFERRED_SIZE, 145, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(83, 83, 83)
+                        .addComponent(jLabel3))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(150, 150, 150)
+                        .addComponent(jLabel1)))
+                .addGap(0, 0, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(64, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel2)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(passwordCompare)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(createAccountButton, javax.swing.GroupLayout.DEFAULT_SIZE, 242, Short.MAX_VALUE)
+                                .addComponent(newPassword)
+                                .addComponent(newPasswordCompare)))
+                        .addComponent(newNickname, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel6))
+                .addGap(62, 62, 62))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(35, 35, 35)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel3)
+                .addGap(35, 35, 35)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(newNickname, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel6)
+                .addGap(29, 29, 29)
+                .addComponent(jLabel4)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(newPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(27, 27, 27)
+                .addComponent(jLabel5)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(newPasswordCompare, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(passwordCompare)
+                .addGap(35, 35, 35)
+                .addComponent(createAccountButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 143, Short.MAX_VALUE)
+                .addComponent(backToLogIn)
+                .addGap(29, 29, 29))
+        );
+
+        pack();
+    }
+    
+    /*
+     * Checking if password one is input and if it is of the desired length. If conditions are satisfied, sign up button is enabled.
+     */
+    private void newPasswordCompareKeyReleased(java.awt.event.KeyEvent evt) { 
+    	checkUserNameAndPassword("pw");
+    }
+    
+    /*
+     * Check for the nickname field to verify something had been input and therefore enabling the sign up button.
+     */
+    private void newNicknameKeyReleased(java.awt.event.KeyEvent evt) {
+    	checkUserNameAndPassword("nick");
+    }
+    
+    /*
+     * Check for the second password input to verify it matched the first one and to satisfy all previous conditions, thus enabling the sign up button.
+     */
+    private void newPasswordKeyReleased(java.awt.event.KeyEvent evt) {
+    	checkUserNameAndPassword("pw");
+    }
+    
+    private void checkUserNameAndPassword(String currentField) {
+    	char[] pw1 = newPassword.getPassword();  
+        char[] pw2 = newPasswordCompare.getPassword();       
+        String nickName = newNickname.getText();
+        boolean nickOK = (nickName.length() > 3 && nickName.length() < 13);
+        boolean pwMatch = (Arrays.equals(pw1, pw2));
+        boolean pwOK = (pw1.length > 7 && pw1.length < 21);
+        
+        if(currentField == "nick") {
+        	if(!nickOK) {
+        		jLabel6.setText("<html>User name has to be \n<br>4-12 characters long.\n</html>");
+        	} else if(!pwOK) {
+        		jLabel6.setText("<html>Password has to be \n<br>8-20 characters long.\n</html>");
+        	} else if(!pwMatch) {
+        		jLabel6.setText("Passwords do not match");
+        	} else {
+        		jLabel6.setText("");
+        	}
+        } else {
+        	if(!pwMatch) {
+        		jLabel6.setText("Passwords do not match");
+        	} else if(!pwOK) {
+        		jLabel6.setText("<html>Password has to be \n<br>8-20 characters long.\n</html>");
+        	} else if(!nickOK) {
+        		jLabel6.setText("<html>User name has to be \n<br>4-12 characters long.\n</html>");
+        	} else {
+        		jLabel6.setText("");
+        	}
+        	createAccountButton.setEnabled(nickOK && pwMatch && pwOK);
+        }
+	}
+
+	private void createAccountButtonActionPerformed(ActionEvent evt) {
+    	String userName = newNickname.getText();
+    	String password = new String(newPassword.getPassword());
+    	gui.getClient().createAccount(userName, password);
+	}
+
+    private void backToLogInActionPerformed(java.awt.event.ActionEvent evt) {
+    	gui.getLoginWindow().setVisible(true);
+    	this.setVisible(false);
+    }
+    
+}

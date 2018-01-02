@@ -1,0 +1,75 @@
+package test.message;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.junit.Test;
+
+import message.Message;
+
+/**
+ * This class contains test cases for class Message.
+ *
+ * @author Jochen Stuber
+ * @version 2017-03-20
+ */
+public class MessageTest {
+
+	@Test
+	public void testGeTime() {
+		LocalDateTime t = LocalDateTime.of(2017, 4, 1, 9, 15);
+		Message m = new Message("achilles", new TreeSet<String>(),t, "Off to Troy!");
+		String expected = "09:15";
+		String actual = m.getTimeString();
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testToString() {
+		LocalDateTime t = LocalDateTime.of(2017, 4, 1, 9, 15);
+		Message m = new Message("achilles", new TreeSet<String>(),t, "Off to Troy!");
+		String expected = "achilles (09:15): Off to Troy!";
+		String actual = m.toString();
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testEquals1() {
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m1 = new Message("achilles", chat, t, "Off to Troy!");
+		Message m2 = new Message("achilles", chat, t, "Off to Troy!");
+		assertEquals(m1, m2);
+	}
+	
+	@Test
+	public void testEquals2() {
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m1 = new Message("achilles", chat, t, "Off to Troy!");
+		l = Arrays.asList(new String[]{"achilles", "menelaos", "nestar"});
+		chat = new TreeSet<String>(l);
+		Message m2 = new Message("achilles", chat, t, "Off to Troy!");
+		assertNotEquals(m1, m2);
+	}
+	
+	@Test
+	public void testEquals3() {
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m1 = new Message("achilles", chat, t, "Off to Troy!");
+		t = LocalDateTime.of(2017, 4, 29, 23, 46);
+		Message m2 = new Message("achilles", chat, t, "Off to Troy!");
+		assertNotEquals(m1, m2);
+	}
+
+}

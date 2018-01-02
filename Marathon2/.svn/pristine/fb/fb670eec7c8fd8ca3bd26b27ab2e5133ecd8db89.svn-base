@@ -1,0 +1,375 @@
+package test.server;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import message.Message;
+import server.Server;
+
+public class ServerTest {
+	
+	private Server server;
+	private int port = 55000;
+	
+	@Before 
+	public void setUp() throws IOException, InterruptedException {
+		// Add sleep time to allow reconnecting to port
+		Thread.sleep(2000);
+		server = new Server(port);
+	}
+	
+	@After
+	public void tearDown() {
+		server.stop();
+	}
+	
+	@Rule
+	public ExpectedException expected = ExpectedException.none();
+	
+	@Test
+	public void testAddMessageToOutgoingQueues() throws IOException {
+		Queue<Message> q1 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q2 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q3 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q4 = new ConcurrentLinkedQueue<Message>();
+		String n1 = "nestor";
+		String n2 = "zeus";
+		String n3 = "athene";
+		String n4 = "hera";
+		server.registerMessageQueue(n1, q1);
+		server.registerMessageQueue(n2, q2);
+		server.registerMessageQueue(n3, q3);
+		server.registerMessageQueue(n4, q4);
+		Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"zeus", "athene", "hera"}));
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("zeus", chat, t, "Let there be thunder!");
+		server.addMessageToOutgoingQueues(m);
+		assertTrue(q1.isEmpty());
+		assertTrue(q2.isEmpty());
+		assertEquals(m, q3.remove());
+		assertEquals(m, q4.remove());
+	}
+	
+	@Test
+	public void testAddOfflineNotification() throws IOException {
+		Queue<String> q1 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q2 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q3 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q4 = new ConcurrentLinkedQueue<String>();
+		server.registerOfflineQueue(q1);
+		server.registerOfflineQueue(q2);
+		server.registerOfflineQueue(q3);
+		server.registerOfflineQueue(q4);
+		String n1 = "nestor";
+		String n2 = "zeus";
+		String n3 = "athene";
+		String n4 = "hera";
+		server.addOfflineNotification(n1);
+		server.addOfflineNotification(n2);
+		server.addOfflineNotification(n3);
+		server.addOfflineNotification(n4);
+		assertEquals(n1, q1.remove());
+		assertEquals(n2, q1.remove());
+		assertEquals(n3, q1.remove());
+		assertEquals(n4, q1.remove());
+		assertEquals(n1, q2.remove());
+		assertEquals(n2, q2.remove());
+		assertEquals(n3, q2.remove());
+		assertEquals(n4, q2.remove());
+		assertEquals(n1, q3.remove());
+		assertEquals(n2, q3.remove());
+		assertEquals(n3, q3.remove());
+		assertEquals(n4, q3.remove());
+		assertEquals(n1, q4.remove());
+		assertEquals(n2, q4.remove());
+		assertEquals(n3, q4.remove());
+		assertEquals(n4, q4.remove());
+		assertTrue(q1.isEmpty());
+		assertTrue(q2.isEmpty());
+		assertTrue(q3.isEmpty());
+		assertTrue(q4.isEmpty());
+	}
+	
+	@Test
+	public void testAddToOnlineList() throws IOException {
+		String userName = "diomedes";
+		assertFalse(server.isOnline(userName));
+		server.addToOnlineList(userName);
+		assertTrue(server.isOnline(userName));
+	}
+	
+	@Test
+	public void testRemoveFromOnlineList() throws IOException {
+		String userName = "diomedes";
+		server.addToOnlineList(userName);
+		server.removeFromOnlineList(userName);
+		assertFalse(server.isOnline(userName));
+	}
+	
+	@Test
+	public void testSignInSucess() throws IOException, InterruptedException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		boolean result = true;
+		List<Set<String>> historyList = null;
+		List<Message> history = null;
+		DummyDatabase db = new DummyDatabase(result, historyList, history);
+		server.setDatabaseFunctions(db);
+		String toServer = "{\"type\":\"sign-in\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		client.sendToServer(toServer);
+		String expectedReply1 = "{\"type\":\"sign-in\",\"status\":\"Login:1\"}";
+		String actualReply1 = client.readFromServer();
+		String expectedReply2 = "{\"type\":\"online-list\",\"list\":[\"odysseus\"]}";
+		String actualReply2 = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply1, actualReply1);
+		assertEquals(expectedReply2, actualReply2);
+	}
+	
+	@Test
+	public void testSignInFailure() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		boolean result = false;
+		List<Set<String>> historyList = null;
+		List<Message> history = null;
+		DummyDatabase db = new DummyDatabase(result, historyList, history);
+		server.setDatabaseFunctions(db);
+		String toServer = "{\"type\":\"sign-in\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		client.sendToServer(toServer);
+		String expectedReply = "{\"type\":\"sign-in\",\"status\":\"Login:-1\"}";
+		String actualReply = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply, actualReply);
+	}
+
+	@Test
+	public void testSignUpSuccess() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		boolean result = true;
+		List<Set<String>> historyList = null;
+		List<Message> history = null;
+		DummyDatabase db = new DummyDatabase(result, historyList, history);
+		server.setDatabaseFunctions(db);
+		String toServer = "{\"type\":\"sign-up\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		client.sendToServer(toServer);
+		String expectedReply = "{\"type\":\"sign-up\",\"status\":\"Account:1\"}";
+		String actualReply = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply, actualReply);
+	}
+	
+	@Test
+	public void testSignUpFailure() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		boolean result = false;
+		List<Set<String>> historyList = null;
+		List<Message> history = null;
+		DummyDatabase db = new DummyDatabase(result, historyList, history);
+		server.setDatabaseFunctions(db);
+		String toServer = "{\"type\":\"sign-up\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		client.sendToServer(toServer);
+		String expectedReply = "{\"type\":\"sign-up\",\"status\":\"Account:-1\"}";
+		String actualReply = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply, actualReply);
+	}
+	
+	@Test
+	public void testGetHistoryList() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		Set<String> c1 = new TreeSet<String>(Arrays.asList(new String[]{"achilles","helen"}));
+		Set<String> c2 = new TreeSet<String>(Arrays.asList(new String[]{"helen","muse","nestor"}));
+		List<Set<String>> historyList = new ArrayList<Set<String>>();
+		historyList.add(c1);
+		historyList.add(c2);
+		DummyDatabase db = new DummyDatabase();
+		server.setDatabaseFunctions(db);
+		signIn(client, db, "odysseus");
+		
+		db.setHistoryList(historyList);
+		String toServer = "{\"type\":\"get-history-list\"}";
+		client.sendToServer(toServer);
+		String expectedReply = "{\"type\":\"get-history-list\",\"list\":[[\"achilles\",\"helen\"],[\"helen\",\"muse\",\"nestor\"]]}";
+		// Throw away online list message
+		client.readFromServer();
+		String actualReply = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply, actualReply);
+	}
+	
+	@Test
+	public void testGetHistory() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		List<Message> hist = new ArrayList<Message>();
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("achilles", chat, t, "Off to Troy!");
+		hist.add(m);
+		t = LocalDateTime.of(2017, 4, 29, 23, 50);
+		m = new Message("nestor", chat, t, "Sack Priam's city!");
+		hist.add(m);
+		DummyDatabase db = new DummyDatabase();
+		server.setDatabaseFunctions(db);
+		signIn(client, db, "odysseus");
+
+		db.setHistory(hist);
+		String toServer = "{\"type\":\"get-history\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"]}";
+		client.sendToServer(toServer);
+		String expectedReply = "{\"type\":\"get-history\",\"history\":[{\"sender\":\"achilles\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:45\",\"text\":\"Off to Troy!\"},{\"sender\":\"nestor\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:50\",\"text\":\"Sack Priam's city!\"}]}";
+		// Throw away online list message
+		client.readFromServer();
+		String actualReply = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expectedReply, actualReply);
+	}
+	
+	@Test
+	public void testDoSomethingNotSignedIn() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyClient client = new DummyClient("localhost", port);
+		Set<String> c1 = new TreeSet<String>(Arrays.asList(new String[]{"achilles","helen"}));
+		Set<String> c2 = new TreeSet<String>(Arrays.asList(new String[]{"helen","muse","nestor"}));
+		List<Set<String>> historyList = new ArrayList<Set<String>>();
+		historyList.add(c1);
+		historyList.add(c2);
+		DummyDatabase db = new DummyDatabase();
+		server.setDatabaseFunctions(db);
+		
+		db.setHistoryList(historyList);
+		String toServer = "{\"type\":\"get-history-list\"}";
+		client.sendToServer(toServer);
+		String result = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertNull(result);
+	}
+	
+	/*
+	@Test 
+	public void testGetOnlineList() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyDatabase db = new DummyDatabase();
+		server.setDatabaseFunctions(db);
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					DummyClient client1 = new DummyClient("localhost", port);
+					signIn(client1, db, "odysseus");
+					Thread.sleep(2000);
+					client1.disonnect();
+				} catch (IOException e) {
+					fail("Client 1 could not connect.");
+				} catch (InterruptedException e) {
+					fail("Client 1 thread was interrupted.");
+				}
+			}
+		}).start();
+		DummyClient client2 = new DummyClient("localhost", port);
+		signIn(client2, db, "diomedes");
+		// Throw away online list message
+		client2.readFromServer();
+		String expected = "{\"type\":\"offline-notification\",\"userName\":\"odysseus\"}";
+		String actual = client2.readFromServer();
+		client2.disonnect();
+		server.stop();
+		assertEquals(expected, actual);
+	}
+	*/
+	
+	@Test
+	public void testOfflineNotification() throws IOException {
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		DummyDatabase db = new DummyDatabase();
+		server.setDatabaseFunctions(db);
+		server.addToOnlineList("paris");
+		DummyClient client = new DummyClient("localhost", port);
+		signIn(client, db, "odysseus");
+		System.out.println(client.readFromServer());
+		server.removeFromOnlineList("paris");
+		String expected1 = "{\"type\":\"online-list\",\"list\":[\"odysseus\"]}";
+		String actual1 = client.readFromServer();
+		System.out.println(actual1);
+		String expected2 = "{\"type\":\"offline-notification\",\"userName\":\"paris\"}";
+		String actual2 = client.readFromServer();
+		client.disonnect();
+		server.stop();
+		assertEquals(expected1, actual1);
+		assertEquals(expected2, actual2);
+	}
+	
+	
+	public void signIn(DummyClient client, DummyDatabase db, String userName) 
+			throws IOException {
+		db.setResult(true);
+		client.sendToServer("{\"type\":\"sign-in\",\"userName\":\"" + userName + "\",\"password\":\"telemachus\"}");
+		client.readFromServer();
+	}
+	
+
+}

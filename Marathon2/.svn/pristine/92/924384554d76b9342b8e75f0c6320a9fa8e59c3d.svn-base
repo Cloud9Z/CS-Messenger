@@ -1,0 +1,283 @@
+package messenger;
+
+import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import javax.json.JsonException;
+
+public class WorkerThread implements Runnable {
+	// Reference to the server
+	private final Server server;
+	// Socket for client communication and the associated input and output stream
+	private final Socket socket;
+	private BufferedReader in;
+	private PrintWriter out;
+	// Protocol for communication with client
+	private final ServerProtocol protocol;
+	// The user name of the user served by this thread
+	private String connectedUser;
+	// Indicates whether the current user has been authenticated, i.e. is signed in
+	private boolean authenticated;
+	// Queue of Messages to be sent to the client this thread is connected to
+	private Queue<Message> messageQueue;
+	// Queue of offline notifications to be delivered to the client
+	private Queue<String> offlineQueue;
+	// Queue of notifications about group chats that need to be closed
+	private Queue<Set<String>> groupChatsToCloseQueue;
+	private LocalDateTime friendListTime = null;
+	private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+	
+
+	
+	/**
+	 * Constructs a new WorkerThread given a server and socket as arguments. It creates
+	 * a new protocol for client communication and queues, however without registering these.
+	 * 
+	 * @param server the server to which the WorkerThread belongs
+	 * @param socket the socket to be used for client communication
+	 */
+	public WorkerThread(Server server, Socket socket) {
+		this.server = server;
+		this.socket = socket;
+		this.protocol = new ServerProtocol();
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void run() {
+		// Try to retrieve input and output streams for socket.
+		// The try-with-resources statement closes them automatically in the end.
+		try(BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+			// Once obtained assign streams to member variables
+			this.in = in;
+			this.out = out;
+			// Read text from client one line at a time. 
+			String json;
+			while((json = in.readLine()) != null) {
+				// In each iteration, check for and handle interrupts
+				if(Thread.interrupted()) {
+					System.err.println("Thread interrupted. Shutting down...");
+					return;
+				}
+				// Try to decode client message
+				ProtocolMessage pm = null;
+				try { 
+					pm = protocol.decode(json);
+				} catch (JsonException je) {
+					// If decoding fails, stop listening and close connection
+					je.printStackTrace();
+					break;
+				}
+				switch(pm.getType()) {
+				case "sign-up":
+					signUp(pm.getUserName(), pm.getPassword());
+					break;
+				case "sign-in":
+					signIn(pm.getUserName(), pm.getPassword());											
+					break;
+				case "send-message":					
+					sendMessage(pm.getMessage());
+					break;
+				case "close-group-chat":
+					closeGroupChatNotifyOthers(pm.getChat());
+				case "get-history-list":
+					getHistoryList(pm.getUserName());
+					break;
+				case "get-history":
+					getHistory(pm.getChat());
+					break;
+				case "log-out":
+					// Activities requires for logging off are handled in the finally block
+					System.err.println("User " + connectedUser + " has logged off...");
+					break;
+				}
+				// Check for messages to be delivered to the client and deliver if yes
+				// TODO
+				// Check if users have gone offline and inform client if yes
+				if(! friendListTime.format(formatter).equals(server.getFriendListTime().format(formatter))){
+					sendOnlineList(server.getOnlineList());
+					
+				}
+				while(!offlineQueue.isEmpty()) {
+					offlineNotification(offlineQueue.remove());
+				}
+				// Check if group chats have to be closed and inform client if yes
+				while(!groupChatsToCloseQueue.isEmpty()) {
+					closeGroupChatNotifyClient(groupChatsToCloseQueue.remove());
+				}
+			}
+			// Arriving here means that the client has closed the connection.
+			System.err.println(String.format("%s has disconnected...", 
+					authenticated ? "Unauthenticated user" : connectedUser));
+		} catch (IOException ioe) {
+			// Catch other exceptions from retrieving data streams or from reading from socket.
+			System.err.println("Client connection broken. Disconnecting...");
+		} catch (IllegalStateException ise) {
+			// Thrown when there is an unauthenticated attempt to access functionality
+			System.err.println(ise.getMessage());
+		} finally {
+			if(authenticated) {
+				// Remove client from online list
+				server.removeFromOnlineList(connectedUser);
+				// Unregister queues
+				unregisterQueues();
+			}
+			// Close socket
+			try {
+				this.socket.close();
+			} catch (IOException ioe2) {
+				System.err.println("Error closing client socket.");
+			}
+		}
+	}
+
+	/**
+	 * Notifies the threads serving the users in the chat that the group chat needs
+	 * to be closed.
+	 * 
+	 * @param chat the group chat that needs to e closed
+	 */
+	private void closeGroupChatNotifyOthers(Set<String> chat) {
+		server.addGroupChatClosingNotification(connectedUser, chat);
+	}
+	
+	/**
+	 * Notified the client that a group chat needs to be closed.
+	 * 
+	 * @param chat the group chat that needs to be closed
+	 */
+	private void closeGroupChatNotifyClient(Set<String> chat) {
+		out.println(protocol.closeGroupChat(chat));
+	}
+
+	/**
+	 * This method sends the user account information to database to sign up a new user
+	 * and returns if sign up is successful to the client in JSON protocol format.
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */	
+	private void signUp(String userName, String password) throws IOException{
+		boolean SignedUp = server.getDatabaseFunctions().signUp(userName, password);
+		if(SignedUp){
+			out.println(protocol.signUp("Account:1"));			
+		}
+		else{
+			out.println(protocol.signUp("Account:-1"));
+		}	
+	}
+	
+	/**
+	 * This method sends the user's user name and password to database 
+	 * to map if sign in information is correct, and returns if log in is successful 
+	 * to the client in JSON protocol format.
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void signIn(String userName, String password) throws IOException{
+		boolean SignedIn = server.getDatabaseFunctions().signIn(userName, password);
+		if(SignedIn){
+			authenticated = true;
+			connectedUser = userName;
+			this.messageQueue = new LinkedBlockingQueue<Message>();
+			server.registerMessageQueue(userName, messageQueue);
+			this.offlineQueue = new LinkedBlockingQueue<String>();
+			server.registerMessageQueue(userName, messageQueue);
+			this.groupChatsToCloseQueue = new LinkedBlockingQueue<Set<String>>(); 
+			server.registerChatsToCloseQueue(userName, groupChatsToCloseQueue);
+			out.println(protocol.signIn("Login:1"));
+			server.addToOnlineList(userName);
+		}
+		else{
+			out.println(protocol.signIn("Login:-1"));
+		}
+		
+	}
+	
+	/**
+	 * This method sends messages from a client to other clients 
+	 * who are involved in the corresponding chat in JSON protocol format, 
+	 * and save the messages and relative information into database for future recall.  
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void sendMessage(Message message) throws IllegalStateException {
+		if(!authenticated) {throw new IllegalStateException("Unauthorised access attempted");}
+		server.getDatabaseFunctions().saveMessage(message);
+		server.addMessageToOutgoingQueues(message);
+		out.println(protocol.sendMessage(message));
+	}
+	
+	/**
+	 * This method obtains the list of histories for the specified user name from the
+	 * database and returns it to the client in JSON protocol format.
+	 * 
+	 * @param userName the user name for which the history list shall be retrieved
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void getHistoryList(String userName) throws IllegalStateException {
+		if(!authenticated) {throw new IllegalStateException("Unauthorised access attempted");}
+		List<Set<String>> list = server.getDatabaseFunctions().getHistoryList(userName);
+		out.println(protocol.getHistoryList(list));
+	}
+	
+	/**
+	 * Obtains a chat history for the specified chat from the database and returns it to
+	 * the client in JSON protocol format.
+	 * 
+	 * @param users the users that are part of the chat for which the history shall be obtained
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void getHistory(Set<String> users) throws IllegalStateException {
+		if(!authenticated) {throw new IllegalStateException("Unauthorised access attempted");}
+		List<Message> history = server.getDatabaseFunctions().getHistory(users);
+		out.println(protocol.getHistory(history));
+	}
+	
+	/**
+	 * Informs the connected client that a user has gone offline. 
+	 * 
+	 * @param userName the user who has gone offline
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void offlineNotification(String userName) {
+		// In the unlikely event that a user logs in quickly after having gone offline and
+		// the notification for that has not yet been placed in all queues, check that the
+		// user is not notified of herself going offline.
+		if(!userName.equals(connectedUser)) {
+			out.println(protocol.offlineNotification(userName));
+		}
+	}
+	
+	/**
+	 * Unregisters all of the thread's queues from the server
+	 */
+	private void unregisterQueues() {
+		server.unregisterMessageQueue(connectedUser);
+		server.unregisterGroupChatsToCloseQueue(connectedUser);
+		server.unregisterOfflineQueue(offlineQueue);
+	}
+	
+	private void sendOnlineList(Set<String> onlineList){
+		out.println(protocol.getOnlineList(onlineList));
+	}
+	
+}

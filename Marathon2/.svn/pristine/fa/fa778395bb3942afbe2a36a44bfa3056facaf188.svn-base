@@ -1,0 +1,13 @@
+package gui;
+
+import client.ClientInterface;
+
+public class GUITestDrive {
+	
+	public static void main(String[] args) {
+		ClientInterface client = new DummyClientForGUI();
+		MessengerGUI gui = new MessengerGUI(client);
+		gui.startGUI();
+	}
+	
+}

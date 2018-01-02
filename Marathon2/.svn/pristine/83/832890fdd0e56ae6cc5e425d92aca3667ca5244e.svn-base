@@ -1,0 +1,184 @@
+package gui.windows;
+
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.time.LocalDateTime;
+import java.util.Set;
+
+import javax.swing.DefaultListModel;
+
+import gui.MessengerGUI;
+import gui.dialogues.groupChatDisconnected;
+import message.Message;
+
+/**
+ * This class contains the JFrame for groupChat. It implements the ChatWindow class and in addition it contains a 
+ * list of all the users present in that instance of groupChat. Also, groupChat is only available while all users participating
+ * are online, and when a user goes offline or closes the groupChat window, the groupChat frame will be disabled and the groupChatDisconnected dialog will be displayed 
+ * for the remaining users participating. 
+ */
+public class groupChat extends javax.swing.JFrame implements ChatWindow {
+	
+	private MessengerGUI gui;
+	private Set<String> members;
+	private groupChat thisGroupChat = this;
+	private boolean closed;
+	private DefaultListModel<String> listModel;
+    private javax.swing.JTextArea chatPanel;
+    private javax.swing.JTextArea chatTextArea;
+    private javax.swing.JLabel chatWithLabel;
+    private javax.swing.JList<String> jList1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JButton sendMessage;
+	
+    /**
+     * Creates new form userChat
+     */
+    public groupChat(MessengerGUI gui, Set<String> members, java.awt.Frame parent, boolean modal) {
+        this.gui = gui;
+        gui.registerGroupChat(this);
+        this.members = members;
+        this.listModel = new DefaultListModel<String>();
+        for(String member :  members) {
+        	listModel.addElement(member);
+        }        
+    	initComponents();
+    }
+   
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        chatTextArea = new javax.swing.JTextArea();
+        sendMessage = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        chatPanel = new javax.swing.JTextArea();
+        chatWithLabel = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jList1 = new javax.swing.JList<>(listModel);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Group Chat: " + members.toString());
+        setLocation(new java.awt.Point(1050, 23));
+        setResizable(false);
+        setType(java.awt.Window.Type.POPUP);
+
+        chatTextArea.setColumns(20);
+        chatTextArea.setRows(5);
+        jScrollPane1.setViewportView(chatTextArea);
+
+        sendMessage.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/1489283472_telegram.png"))); 
+        sendMessage.setBorder(null);
+        sendMessage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sendMessageActionPerformed(evt);
+            }
+        });
+
+        chatPanel.setEditable(false);
+        chatPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        jScrollPane2.setViewportView(chatPanel);
+
+        chatWithLabel.setText("Chat");
+
+        jScrollPane3.setViewportView(jList1);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(chatWithLabel)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 256, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(sendMessage))
+                            .addComponent(jScrollPane2))))
+                .addContainerGap(29, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(28, 28, 28)
+                .addComponent(chatWithLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addComponent(sendMessage, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(25, 25, 25))
+        );
+        
+        /*
+         * Window listener added to discover if a user has closed the groupChat window and handle the event (calling the gui 
+         * method closeGroupChat for the users and de-registering the groupChat closed).
+         */
+        this.addWindowListener(new WindowAdapter()
+        {
+            public void windowClosing(WindowEvent e)
+            {
+                if(!closed) {
+                	gui.getClient().closeGroupChat(members);
+                	gui.deregisterGroupChat(thisGroupChat);
+                }
+            }
+        });
+
+        pack();
+    }
+    
+    /*
+     * Event handler when the user clicks the sendMessage button. The text in the chatTextArea will be put in the message constructor, 
+     * together with the username of the user associated with that particular message and a time stamp. If the chatTextArea is left 
+     * empty by the user but he/she still clicks the sendMessage button, nothing will be sent. Also, after the user has sent the message, 
+     * the chatTextArea will be cleared and ready for a new message to be typed. 
+     * When the sendMessage button is clicked, the gui method sendMessage will be called.  
+     */
+    private void sendMessageActionPerformed(java.awt.event.ActionEvent evt) {
+    	// Get the message from the text field
+    	String text = chatTextArea.getText();
+    	if(text.equals("")) {return;}
+    	chatTextArea.setText("");
+    	Message message = new Message(gui.getUser(), members, LocalDateTime.now(), text);
+    	gui.getClient().sendMessage(message);
+    }
+    
+    /*
+     * When a new message is received/sent, it will be appended in the chatPanel in the order it was received. 
+     */
+    public void displayMessage(Message message) {
+    	chatPanel.append(message.toString());
+    }
+    
+    /*
+     * The event handler for the event of closing the groupChat will generate a new groupChatDisconnected dialogue
+     * and de-register the groupChat from the gui. 
+     */
+    public void handleClosingEvent() {
+    	closed = true;
+    	groupChatDisconnected dialogue = new groupChatDisconnected(this, true);
+    	dialogue.setVisible(true);
+    	gui.deregisterGroupChat(this);
+    }
+    
+	@Override
+	public Set<String> getMembers() {
+		return members;
+	}
+	
+	@Override
+	public void close() {
+		this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+	}
+
+}

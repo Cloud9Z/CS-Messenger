@@ -1,0 +1,266 @@
+package gui.windows;
+
+import java.awt.Insets;
+
+// import static gui.Gui.frame;
+// import static gui.Gui.frame2;
+// import static gui.Gui.frame4;
+// import static gui.Gui.frame6;
+// import static gui.Gui.frame7;
+// import static gui.Gui.frame8;
+
+import java.util.Arrays;
+import java.util.Set;
+import javax.swing.DefaultListModel;
+
+
+
+import javax.swing.JDialog;
+import javax.swing.JList;
+import javax.swing.ListModel;
+
+import gui.MessengerGUI;
+import gui.dialogues.AreYouSure;
+
+/**
+ * This class contains the JFrame for the logged in screen and all related methods. 
+ * The logged in screen contains a list of all online users, create new group chat button, display histories button and a log out button. 
+ * It displays a welcome user message as well. 
+ */
+public class loggedIn extends javax.swing.JFrame {
+    
+	private MessengerGUI gui; 
+    private DefaultListModel<String> onlineListModel;
+    private javax.swing.JButton callChatHistories;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
+    private javax.swing.JButton logOutButton;
+    private javax.swing.JButton newGroupChat;
+    private javax.swing.JScrollPane onlineUsersList;
+    private JList<String> theOnlineUserList;
+    private javax.swing.JLabel welcomeUserLabel;
+    
+     /**
+     * Creates new form GUILoggedIn
+     */
+    public loggedIn(MessengerGUI gui) {
+        this.gui = gui;
+        gui.setHomeScreen(this);
+        onlineListModel = new DefaultListModel<String>(); //Online list of users
+        initComponents();
+        welcomeUserLabel.setText("Welcome, " + gui.getUser() + "!");
+  
+    }
+
+    private void initComponents() {
+
+        onlineUsersList = new javax.swing.JScrollPane();
+        theOnlineUserList = new JList<String>(onlineListModel);
+        jLabel1 = new javax.swing.JLabel();
+        newGroupChat = new javax.swing.JButton();
+        callChatHistories = new javax.swing.JButton();
+        logOutButton = new javax.swing.JButton();
+        welcomeUserLabel = new javax.swing.JLabel();
+        jSeparator1 = new javax.swing.JSeparator();
+        jSeparator2 = new javax.swing.JSeparator();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+
+        
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Messenger");
+        setAlwaysOnTop(true);
+        setLocation(new java.awt.Point(600, 50));
+        setResizable(false);
+
+        theOnlineUserList.setToolTipText("Online users");
+        theOnlineUserList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                OnlineUserListMouseClicked(evt);
+            }
+        });
+        onlineUsersList.setViewportView(theOnlineUserList);
+
+        jLabel1.setFont(new java.awt.Font("Lucida Grande", 0, 18)); 
+        jLabel1.setText("Online Users");
+
+        newGroupChat.setText("New Group Chat");
+        newGroupChat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                newGroupChatActionPerformed(evt);
+            }
+        });
+
+        callChatHistories.setText("Chat Histories");
+        callChatHistories.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                callChatHistoriesActionPerformed(evt);
+            }
+        });
+
+        logOutButton.setText("Log Out");
+        logOutButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                logOutButtonActionPerformed(evt);
+            }
+        });
+        logOutButton.setMargin(new Insets(0, 0, 0, 0));
+
+        welcomeUserLabel.setFont(new java.awt.Font("Lucida Grande", 0, 14)); 
+
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/chat.png"))); 
+
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/teamwork.png"))); 
+
+        jLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/chat (2).png"))); 
+
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/1489281981_Paper-Plane.png"))); 
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jSeparator1, javax.swing.GroupLayout.Alignment.TRAILING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(39, 39, 39)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jLabel1))
+                            .addComponent(onlineUsersList, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(7, 7, 7)
+                        .addComponent(jLabel5))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                        .addGap(28, 28, 28)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel6))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(newGroupChat, javax.swing.GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
+                            .addComponent(callChatHistories, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGap(37, 37, 37))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(29, 29, 29)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(28, 28, 28)
+                        .addComponent(jLabel7))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(welcomeUserLabel)
+                        .addGap(35, 35, 35)
+                        .addComponent(logOutButton, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addComponent(jSeparator2)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap(11, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel2)
+                    .addComponent(jLabel7)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(logOutButton, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(welcomeUserLabel))
+                        .addGap(11, 11, 11)))
+                .addGap(13, 13, 13)
+                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 15, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(newGroupChat, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4))
+                        .addGap(23, 23, 23)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(callChatHistories, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel6))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(7, 7, 7)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(onlineUsersList, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(44, 44, 44))
+        );
+
+        pack();
+    }
+
+    private void newGroupChatActionPerformed(java.awt.event.ActionEvent evt) {
+    	selectUsersGroupChat selectionScreen = gui.getGroupChatSelectionScreen();
+    	if(selectionScreen == null) {
+    		selectionScreen = new selectUsersGroupChat(gui, this, true, onlineListModel);
+    	}
+        selectionScreen.setVisible(true);
+    }
+
+    private void callChatHistoriesActionPerformed(java.awt.event.ActionEvent evt) {
+    	gui.getClient().requestHistoryList();
+    }
+
+    private void logOutButtonActionPerformed(java.awt.event.ActionEvent evt) {
+    	AreYouSure confirmDialogue = new AreYouSure(gui, this, true);
+    	confirmDialogue.setVisible(true);
+    }
+    
+    /*
+     * When the user double clicks on a user present in the online list, a new chat will be displayed with the chosen user. 
+     */
+    private void OnlineUserListMouseClicked(java.awt.event.MouseEvent evt) {
+    if (evt.getClickCount() == 2) {
+        // int index = theOnlineUserList.locationToIndex(evt.getPoint());
+        // System.out.println("index: " + index);
+    	Object user = theOnlineUserList.getSelectedValue();
+    	if(!(user == null)) {
+	        userChat newChat = new userChat(gui, user.toString());
+	        gui.registerUserChat(newChat);
+	        newChat.setVisible(true);
+    	}
+    }
+    }
+    
+    /*
+     * This method displays the online users in the online list, adding each user. 
+     */
+    public void displayOnlineList(Set<String> onlineList){
+        onlineListModel.removeAllElements();
+        for (String user : onlineList){
+            onlineListModel.addElement(user);
+        }
+    }
+
+	/**
+	 * @param text the text to set
+	 */
+	public void setWelcomeUserLabelText(String text) {
+		this.welcomeUserLabel.setText(text);
+	}
+
+}

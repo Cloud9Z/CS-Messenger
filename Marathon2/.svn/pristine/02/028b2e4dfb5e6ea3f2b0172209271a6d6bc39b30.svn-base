@@ -1,0 +1,138 @@
+package gui.windows;
+
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.List;
+import java.util.Set;
+
+import gui.MessengerGUI;
+import message.Message;
+
+/**
+ * This class contains the history window frame and associated methods. It displays the history associated with a
+ * particular user and contains an update history to retrieve the latest history associated with that particular user.
+ */
+public class HistoryWindow extends javax.swing.JFrame implements ChatWindow {
+	
+    private Set<String> members;
+    private MessengerGUI gui;
+	private HistoryWindow thisHistoryWindow;
+	private javax.swing.JTextArea historyTextArea;
+    private javax.swing.JLabel historyWithUserLabel;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JScrollPane jScrollPane1;
+    // private javax.swing.JButton updateHistoryButton;
+	
+    /**
+     * Creates new form historyWindow
+     */
+    public HistoryWindow(MessengerGUI gui, List<Message> messages) {
+        this.gui = gui;
+        gui.registerHistoryWindow(this);
+    	members = messages.get(0).getChat();
+    	initComponents();
+    	thisHistoryWindow = this;
+    	displayMessages(messages);
+    }
+
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        historyTextArea = new javax.swing.JTextArea();
+        historyWithUserLabel = new javax.swing.JLabel();
+        // updateHistoryButton = new javax.swing.JButton();
+        jLabel2 = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Chat history with " + members.toString());
+        setAlwaysOnTop(true);
+        setLocation(new java.awt.Point(600, 50));
+        setResizable(false);
+
+        historyTextArea.setEditable(false);
+        historyTextArea.setColumns(20);
+        historyTextArea.setRows(5);
+        jScrollPane1.setViewportView(historyTextArea);
+
+        historyWithUserLabel.setText("Chat history with: " + members.toString());
+        
+        /*
+        updateHistoryButton.setText("Update history");
+        updateHistoryButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                updateHistoryButtonActionPerformed(evt);
+            }
+        });
+        */
+
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gui/images/1489356417_Paper-Plane.png"))); 
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(24, 24, 24)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 346, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(historyWithUserLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel2)))
+                .addContainerGap(24, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                // .addComponent(updateHistoryButton)
+                .addGap(16, 16, 16))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(19, 19, 19)
+                        .addComponent(historyWithUserLabel)
+                        .addGap(22, 22, 22))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                // .addComponent(updateHistoryButton)
+                .addContainerGap(10, Short.MAX_VALUE))
+        );
+        
+        this.addWindowListener(new WindowAdapter()
+        {
+            public void windowClosing(WindowEvent e)
+            {
+				gui.deregisterHistoryWindow(thisHistoryWindow);
+            }
+        });
+
+        pack();
+    }
+    
+    public void displayMessages(List<Message> messages) {
+    	for(Message message : messages) {
+    		displayMessage(message);
+    	}
+    }
+    
+	@Override
+	public void displayMessage(Message message) {
+		this.historyTextArea.append(message.toString() + "\n");
+	}
+
+	@Override
+	public Set<String> getMembers() {
+		return members;
+	}
+
+	@Override
+	public void close() {
+		this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+	}
+
+}

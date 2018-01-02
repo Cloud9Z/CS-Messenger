@@ -1,0 +1,29 @@
+import java.awt.EventQueue;
+import java.io.IOException;
+
+import client.Client;
+import gui.MessengerGUI;
+import server.Server;
+
+public class ChatAppTestDrive {
+	
+	public static void main(String[] args) throws IOException {
+		int port = 63000;
+		Server server =  new Server(port);
+		new Thread(new Runnable() {
+			public void run() {
+				server.start();
+			}
+		}).start();
+		Client client = new Client();
+		client.connect("localhost", port);
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				MessengerGUI gui = new MessengerGUI(client);
+				gui.startGUI();
+			}
+		});
+		client.listen();
+		server.stop();
+	}
+}

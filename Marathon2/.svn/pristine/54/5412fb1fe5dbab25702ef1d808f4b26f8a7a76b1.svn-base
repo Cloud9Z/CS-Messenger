@@ -1,0 +1,29 @@
+package messenger;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+
+public class DummyClient {
+	
+	private Socket socket;
+	private DataInputStream dis;
+	private DataOutputStream dos;
+	
+	
+	public DummyClient(String hostName, int port) throws IOException {
+		this.socket = new Socket(hostName, port);
+		this.dis = new DataInputStream(socket.getInputStream());
+		this.dos = new DataOutputStream(socket.getOutputStream());
+	}
+	
+	public void sendToServer(String message) throws IOException {
+		dos.writeUTF(message);
+	}
+	
+	public String readFromServer() throws IOException {
+		return dis.readUTF();
+	}
+	
+}

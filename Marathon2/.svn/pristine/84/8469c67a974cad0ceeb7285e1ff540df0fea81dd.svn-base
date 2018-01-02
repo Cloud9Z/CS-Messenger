@@ -1,0 +1,221 @@
+package messenger;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.net.Socket;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import javax.json.JsonException;
+
+public class WorkerThread implements Runnable {
+	// Reference to the server
+	private final Server server;
+	// Socket for client communication and the associated input and output stream
+	private final Socket socket;
+	private DataInputStream dis;
+	private DataOutputStream dos;
+	// Protocol for communication with client
+	private final ServerProtocol protocol;
+	// Queue of Messages to be sent to the client this thread is connected to
+	private Queue<Message> messageQueue;
+	// Queue of offline notifications to be delivered to the client
+	private Queue<String> offlineQueue;
+	// The user name of the user served by this thread
+	private String connectedUser;
+	
+	/**
+	 * Constructs a new WorkerThread given a server and socket as arguments. It creates
+	 * a new protocol for client communication and queues, however without registering these.
+	 * 
+	 * @param server the server to which the WorkerThread belongs
+	 * @param socket the socket to be used for client communication
+	 */
+	public WorkerThread(Server server, Socket socket) {
+		this.server = server;
+		this.socket = socket;
+		this.protocol = new ServerProtocol();
+		this.messageQueue = new ConcurrentLinkedQueue<Message>();
+		this.offlineQueue = new ConcurrentLinkedQueue<String>();
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void run() {
+		// Try to retrieve input and output streams for socket.
+		// The try-with-resources statement closes them automatically in the end.
+		try(DataInputStream dis = new DataInputStream(socket.getInputStream());
+			DataOutputStream dos = new DataOutputStream(socket.getOutputStream())) {
+			// Once obtained assign streams to member variables
+			this.dis = dis;
+			this.dos = dos;
+			// Read text from client one line at a time. 
+			String json;
+			while((json = dis.readUTF()) != null) {
+				// In each iteration, check for and handle interrupts
+				if(Thread.interrupted()) {
+					return;
+				}
+				// Try to decode client message
+				ProtocolMessage pm = null;
+				try { 
+					pm = protocol.decode(json);
+				} catch (JsonException je) {
+					// If decoding fails, stop listening and close connection
+					je.printStackTrace();
+					break;
+				}
+				switch(pm.getType()) {
+				case "sign-up":
+					signUp(pm.getUserName(), pm.getPassword());
+					break;
+				case "sign-in":
+					signIn(pm.getUserName(), pm.getPassword());					
+					// Should register both queues with the server once signed in					
+					break;
+				case "send-message":
+					Message message = new Message(pm.getUserName(), pm.getChat(), pm.getTime(), pm.getText());
+					sendMessage(message);
+					break;
+				case "get-history-list":
+					getHistoryList(pm.getUserName());
+					break;
+				case "get-history":
+					getHistory(pm.getChat());
+					break;
+				case "log-out":
+					// Activities requires for logging off are handled in the finally block
+					System.err.println("User " + connectedUser + " has logged off...");
+					break;
+				}
+				// Check for messages to be delivered to the client and deliver if yes
+				// TODO
+				// Check if users have gone offline and inform client if yes
+				while(!offlineQueue.isEmpty()) {
+					closeChat(offlineQueue.remove());
+				}
+			}
+		} catch (EOFException eofe) {
+			// Arriving here means that the client has closed the connection.
+			System.err.println("A client has disconnected...");
+		} catch (IOException ioe) {
+			// Catch other exceptions from retrieving data streams or from reading from socket.
+			System.err.println("Client connection broken. Disconnecting...");
+		} finally {
+			// Remove client from online list
+			if(connectedUser != null) {
+				server.removeFromOnlineList(connectedUser);
+			}
+			// Close socket
+			try {
+				this.socket.close();
+			} catch (IOException ioe2) {
+				System.err.println("Error closing client socket.");
+			}
+		}
+	}
+	
+	
+	/**
+	 * This method sends the user account information to database to sign up a new user
+	 * and returns if sign up is successful to the client in JSON protocol format.
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */	
+	private void signUp(String userName, String password) throws IOException{
+		boolean SignedUp = server.getDatabaseFunctions().signUp(userName, password);
+		if(SignedUp){
+			dos.writeUTF(protocol.signUp("true"));			
+		}
+		else{
+			dos.writeUTF(protocol.signUp("false"));
+		}	
+	}
+	
+	/**
+	 * This method sends the user's user name and password to database 
+	 * to map if sign in information is correct, and returns if log in is successful 
+	 * to the client in JSON protocol format.
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void signIn(String userName, String password) throws IOException{
+		boolean SignedIn = server.getDatabaseFunctions().signIn(userName, password);
+		if(SignedIn){
+			dos.writeUTF(protocol.signIn("true"));
+			server.addToOnlineList(userName);
+			Queue<Message> messageQueue = new LinkedBlockingQueue<Message>();
+			server.registerMessageQueue(userName, messageQueue);
+		}
+		else{
+			dos.writeUTF(protocol.signIn("false"));
+		}
+		
+	}
+	
+	/**
+	 * This method sends messages from a client to other clients 
+	 * who are involved in the corresponding chat in JSON protocol format, 
+	 * and save the messages and relative information into database for future recall.  
+	 *  
+	 * @param userName the user name of the account
+	 * @param password the password of the account
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void sendMessage(Message message) throws IOException{
+		server.getDatabaseFunctions().saveMessage(message);
+		dos.writeUTF(protocol.sendMessage(message));
+	}
+	
+	/**
+	 * This method obtains the list of histories for the specified user name from the
+	 * database and returns it to the client in JSON protocol format.
+	 * 
+	 * @param userName the user name for which the history list shall be retrieved
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void getHistoryList(String userName) throws IOException {
+		List<Set<String>> list = server.getDatabaseFunctions().getHistoryList(userName);
+		dos.writeUTF(protocol.getHistoryList(list));
+	}
+	
+	/**
+	 * Obtains a chat history for the specified chat from the database and returns it to
+	 * the client in JSON protocol format.
+	 * 
+	 * @param users the users that are part of the chat for which the history shall be obtained
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void getHistory(Set<String> users) throws IOException {
+		List<Message> history = server.getDatabaseFunctions().getHistory(users);
+		dos.writeUTF(protocol.getHistory(history));
+	}
+	
+	/**
+	 * Informs the connected client that a user has gone offline. 
+	 * 
+	 * @param userName the user who has gone offline
+	 * @throws IOException if an error occurs while writing to the socket
+	 */
+	private void closeChat(String userName) throws IOException {
+		// In the unlikely event that a user logs in quickly after having gone offline and
+		// the notification for that has not yet been placed in all queues, check that the
+		// user is not notified of herself going offline.
+		if(!userName.equals(connectedUser)) {
+			dos.writeUTF(protocol.closeChat(userName));
+		}
+	}
+	
+}

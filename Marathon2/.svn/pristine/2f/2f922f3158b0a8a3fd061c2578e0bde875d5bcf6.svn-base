@@ -1,0 +1,186 @@
+package test.server;
+
+import static org.junit.Assert.assertEquals;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import message.Message;
+import message.ProtocolMessage;
+import server.ServerProtocol;
+
+/**
+ * 
+ *
+ * @author 
+ * @version 2017-03-10
+ */
+public class ServerProtocolTest {
+	
+	ServerProtocol sp;
+	
+	@Before
+	public void setUp() {
+		sp = new ServerProtocol();
+	}
+	
+	@Test
+	public void testSignIn() {
+		String expected = "{\"type\":\"sign-in\",\"status\":\"Login:1\"}";
+		String actual = sp.signIn("Login:1");
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testSignUp() {
+		String expected = "{\"type\":\"sign-up\",\"status\":\"Account:1\"}";
+		String actual = sp.signUp("Account:1");
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testSendMessage() {
+		String expected = "{\"type\":\"send-message\",\"sender\":\"achilles\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:45\",\"text\":\"Off to Troy!\"}";
+		Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"achilles", "menelaos", "nestor"}));
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("achilles", chat, t, "Off to Troy!");
+		String actual = sp.sendMessage(m);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testGetOnlineList() {
+		String expected = "{\"type\":\"online-list\",\"list\":[\"achilles\",\"helen\",\"priam\"]}";
+		Set<String> list = new TreeSet<String>(Arrays.asList(new String[]{"achilles", "helen", "priam"}));
+		String actual = sp.getOnlineList(list);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testOfflineNotification() {
+		String expected = "{\"type\":\"offline-notification\",\"userName\":\"hektor\"}";
+		String actual = sp.offlineNotification("hektor");
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testCloseGroupChat() {
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		String expected = "{\"type\":\"close-group-chat\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"]}";
+		String actual = sp.closeGroupChat(chat);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testGetHistoryList() {
+		String expected = "{\"type\":\"get-history-list\",\"list\":[[\"achilles\",\"helen\"],[\"helen\",\"muse\",\"nestor\"]]}";
+		List<Set<String>> list = new ArrayList<Set<String>>();
+		Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"achilles","helen"}));
+		list.add(chat);
+		chat = new TreeSet<String>(Arrays.asList(new String[]{"nestor","helen","muse"}));
+		list.add(chat);
+		String actual = sp.getHistoryList(list);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testGetHistory() {
+		String expected = "{\"type\":\"get-history\",\"history\":[{\"sender\":\"achilles\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:45\",\"text\":\"Off to Troy!\"},{\"sender\":\"nestor\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:50\",\"text\":\"Sack Priam's city!\"}]}";
+		List<Message> hist = new ArrayList<Message>();
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("achilles", chat, t, "Off to Troy!");
+		hist.add(m);
+		t = LocalDateTime.of(2017, 4, 29, 23, 50);
+		m = new Message("nestor", chat, t, "Sack Priam's city!");
+		hist.add(m);
+		String actual = sp.getHistory(hist);
+		assertEquals(expected, actual);	
+	}
+	
+	@Test
+	public void testDecodeSignIn() {
+		String json = "{\"type\":\"sign-in\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("sign-in");
+		expected.setUserName("odysseus");
+		expected.setPassword("telemachus");
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testDecodeSignUp() {
+		String json = "{\"type\":\"sign-up\",\"userName\":\"odysseus\",\"password\":\"telemachus\"}";
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("sign-up");
+		expected.setUserName("odysseus");
+		expected.setPassword("telemachus");
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testDecodeSendMessage() {
+		String json = "{\"type\":\"send-message\",\"sender\":\"achilles\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"],\"timeStamp\":\"2017-04-29T23:45\",\"text\":\"Off to Troy!\"}";
+		List<String> l = Arrays.asList(new String[]{"achilles", "menelaos", "nestor"});
+		Set<String> chat = new TreeSet<String>(l);
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("achilles", chat, t, "Off to Troy!");
+		
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("send-message");
+		expected.setMessage(m);
+		
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testDecodeCloseGroupChat() {
+		String json = "{\"type\":\"close-group-chat\",\"chat\":[\"achilles\",\"menelaos\",\"nestor\"]}";
+		Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"achilles","menelaos","nestor"}));
+
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("close-group-chat");
+		expected.setChat(chat);
+		
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testDecodeGetHistoryList() {
+		String json = "{\"type\":\"get-history-list\"}";
+
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("get-history-list");
+		
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+	
+	@Test 
+	public void testDecodeGetHistory() {
+		String json = "{\"type\":\"get-history\",\"chat\":[\"achilles\",\"patroklos\"]}";
+		List<String> l = Arrays.asList(new String[]{"achilles", "patroklos"});
+		Set<String> chat = new TreeSet<String>(l);
+		
+		ProtocolMessage expected = new ProtocolMessage();
+		expected.setType("get-history");
+		expected.setChat(chat);
+		
+		ProtocolMessage actual = sp.decode(json);
+		assertEquals(expected, actual);
+	}
+
+}

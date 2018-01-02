@@ -1,0 +1,195 @@
+package server.db;
+
+/**
+ * @author hry
+ * @version 08/03/2017
+ */
+import java.sql.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.swing.*;
+
+public class SQLSever {
+
+        public static Connection con = null;
+        public static String driver = "org.postgresql.Driver";
+        public static String url = "jdbc:postgresql://mod-fund-databases.cs.bham.ac.uk:5432/rxh657";
+        public static String user = "rxh657";
+        public static String pass = "34cgl8wgt2";
+      
+        public static Connection getConnection() {
+                try {
+                        Class.forName(driver);
+                        con = DriverManager.getConnection(url, user, pass);
+                        System.out.println("Connect to database successfully");
+                } catch (Exception e) {
+                        e.printStackTrace();
+                }
+                return con;
+        }
+
+        public static void createBaseTables() {
+                Statement stmt = null;
+                try {
+                        stmt = con.createStatement();
+
+                        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Users(User_id varchar(50) PRIMARY KEY, Username varchar(50), Password varchar(50));");
+                        System.out.println("Users created successfully");
+
+                        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Message(Message_id varchar(50) PRIMARY KEY, from_id varchar(50), chat_id varchar(50), Content TEXT, Datetime timestamp );");
+                        System.out.println("Message created successfully");
+
+                        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS UsersChatsMapping(UserChatsMapping_id varchar(50) PRIMARY KEY, User_id varchar(50), chat_id varchar(50));");
+                        System.out.println("UsersChatsMapping created successfully");
+                } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                }
+        }
+
+
+        /**
+          get the chat id from a message
+          chat id = intersection part of chat lists from a list of users
+         **/
+        public static String findIntersection(List<Set<String>> chatslist) {
+                String findchatid = "";
+                Set<String> firstchatlist = chatslist.get(0);
+                for (String chatid : firstchatlist) {
+
+                        boolean havethisid = true;
+                        for (Set<String> chatlist : chatslist) {
+                                if (!ListHavetthisId(chatid, chatlist)) {
+                                        havethisid = false;
+                                        break;
+                                }
+                        }
+                        if (havethisid) {
+                                findchatid = chatid;
+                                break;
+                        }
+                }
+                return findchatid;
+        }
+
+        /**
+          check whether chat id has exisited in the chat set or not
+         **/
+        public static boolean ListHavetthisId(String chatid, Set<String> chatset) {
+                boolean haveone = false;
+                for (String myid : chatset) {
+                        if (myid.equals(chatid))
+                                haveone = true;
+                }
+                return haveone;
+        }
+
+        public static String getIdByUserName(String username) {
+                String userid = "";
+                Connection conn = SQLSever.getConnection();
+                String sql = "select * from Users where Username='" + username + "'";
+                ResultSet rs = null;
+                PreparedStatement pstmt = null;
+                try {
+                        pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                        rs = pstmt.executeQuery();
+                        while (rs.next()) {
+                                userid = rs.getString("User_id").toString();
+                                System.out.println("userid=" + userid);
+                        }
+                } catch (SQLException e) {
+                        e.printStackTrace();
+                } finally {
+                	try {rs.close();} catch(Exception e) { /* ignore */ };
+                	try {pstmt.close();} catch(Exception e) { /* ignore */ };
+                	try {conn.close();} catch(Exception e) { /* ignore */ };
+                }
+                return userid;
+        }
+
+        public static String getNameByUserId(String userid) {
+                String username = "";
+                Connection conn = SQLSever.getConnection();
+                String sql = "select * from Users where User_id='" + userid + "'";
+                ResultSet rs = null;
+                PreparedStatement pstmt = null;
+                try {
+                        pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                        rs = pstmt.executeQuery();
+                        while (rs.next()) {
+                                username = rs.getString("Username").toString();
+                                System.out.println("Username=" + username);
+                        }
+                } catch (SQLException e) {
+                        e.printStackTrace();
+                } finally {
+                	try {rs.close();} catch(Exception e) { /* ignore */ };
+                	try {pstmt.close();} catch(Exception e) { /* ignore */ };
+                	try {conn.close();} catch(Exception e) { /* ignore */ };
+                }
+                return username;
+        }
+
+        /**
+          get all the chats of a user by its username
+         **/
+        public static Set<String> getChatListByUser(String username) {
+                String userid = getIdByUserName(username);
+                System.out.println("Found id " + userid + " for user " + username);
+                Set<String> chatlist = new HashSet<String>();
+                Connection conn = SQLSever.getConnection();
+                String sql = "select * from UsersChatsMapping where User_id='" + userid
+                                + "'";
+                ResultSet rs = null;
+                PreparedStatement pstmt = null;
+                try {
+                        pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                        rs = pstmt.executeQuery();
+                        while (rs.next()) {
+                            System.out.println("Adding chat id " + "for user " + username);    
+                        	String chatid = rs.getString("chat_id").toString();
+                                chatlist.add(chatid);
+                        }
+                } catch (SQLException e) {
+                        e.printStackTrace();
+                } finally {
+                	try {rs.close();} catch(Exception e) { /* ignore */ };
+                	try {pstmt.close();} catch(Exception e) { /* ignore */ };
+                	try {conn.close();} catch(Exception e) { /* ignore */ };
+                }
+                return chatlist;
+
+        }
+
+        /**
+          get all usernames of a chat by its chat id
+        **/
+        public static Set<String> getUsersByChat(String chatid) {
+
+                Set<String> usernamelist = new HashSet<String>();
+                Connection conn = SQLSever.getConnection();
+                String sql = "select * from UsersChatsMapping where chat_id='" + chatid
+                                + "'";
+                ResultSet rs = null;
+                PreparedStatement pstmt = null;
+                try {
+                        pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                        rs = pstmt.executeQuery();
+                        while (rs.next()) {
+                                String userid = rs.getString("User_id").toString();
+                                String username = getNameByUserId(userid);
+                                System.out.println("Adding username " + "for user id " + userid + " and chat id " + chatid);
+                                usernamelist.add(username);
+                        }
+                } catch (SQLException e) {
+                        e.printStackTrace();
+                } finally {
+                	try {rs.close();} catch(Exception e) { /* ignore */ };
+                	try {pstmt.close();} catch(Exception e) { /* ignore */ };
+                	try {conn.close();} catch(Exception e) { /* ignore */ };
+                }
+                return usernamelist;
+        }
+
+}

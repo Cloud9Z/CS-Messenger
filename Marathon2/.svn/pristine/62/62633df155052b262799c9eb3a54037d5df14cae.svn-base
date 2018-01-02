@@ -1,0 +1,30 @@
+import java.util.Observable;
+import java.util.Observer;
+
+public interface CreateAccountGUI extends Observer {
+	
+	/**
+	 * 
+	 * Precondition: 'arg' is of type Integer and has one of the following values:
+	 * 	Account:1 Account was successfully created 
+	 * 	Account:-1 Username already taken 
+	 *  Account:-2 Connection lost
+	 * 	Account:-3 Other failure
+	 * 	Login:1 Login was successful
+	 * 	Login:-1 Username does not exist or password incorrect 
+	 *  Login:-2 Connection lost
+	 * 	Login:-3 Other failure
+	 * 	Login:-4 User already logged in
+	 *  Online:1
+	 *  Chat:1 New message
+	 *  Chat:2 Exit chat
+	 *  History:1 History list has arrived
+	 *  History:2 History has arrived
+	 * 'o' is of type 'Client'.
+	 * 
+	 * 
+	 */
+	@Override
+	public void update(Observable o, Object arg);
+	
+}

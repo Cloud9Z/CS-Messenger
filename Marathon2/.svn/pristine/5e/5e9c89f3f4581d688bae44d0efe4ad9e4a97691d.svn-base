@@ -1,0 +1,15 @@
+package messenger;
+
+public class WorkerThread implements Runnable {
+
+	@Override
+	public void run() {
+		// Loop
+			// Get message from client
+			// Determine message type
+				// Type send-message
+					// Pass message to recipients
+					// Call database method
+	}
+	
+}

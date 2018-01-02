@@ -1,0 +1,96 @@
+package messenger;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Server implements DatabaseFunctions {
+	
+	private final ServerSocket serverSocket; // server-side socket
+	private final ExecutorService pool; // thread pool
+	private final Set<String> onlineList; // list of online users
+	
+	/**
+	 * Constructs a new instance of Server, initialising its data structures.
+	 * 
+	 * @param port the port on which the Server shall listen
+	 * @throws IOException if the ServerSocket cannot listen on the specified port
+	 */
+	public Server(int port) throws IOException {
+		this.serverSocket = new ServerSocket(port);
+		this.pool = Executors.newCachedThreadPool(); 
+		this.onlineList = new ConcurrentSkipListSet<String>();
+	}
+	
+	/**
+	 * Starts the server so that it listens for incoming connections.
+	 */
+	public void start() {
+		try	{
+			while(true) {
+				System.err.println("Server is now listening...");
+				Socket s = serverSocket.accept();
+				// Runnable r = new <NameOfRunnableClass>(s);
+				// pool.submit(r);
+			}
+		} catch (IOException ioe) {
+			System.err.println("Server is no longer listening...");;
+		} finally {
+			stop();
+		}
+	}
+	
+	/**
+	 * Stops the server by shutting down the thread pool and closing the server socket.
+	 */
+	public void stop() {
+		if(!pool.isShutdown()){
+			System.err.println("Shutting down thread pool...");
+			pool.shutdownNow();
+		}
+		if(!serverSocket.isClosed()) {
+			try {
+				System.err.println("Closing server socket...");
+				serverSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	@Override
+	public boolean signUp(String userName, String password) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean signIn(String userName, String password) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void saveMessage(Message message) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public List<Set<String>> getHistoryList(String userName) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<Message> getHistory(Set<String> users) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

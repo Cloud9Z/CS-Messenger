@@ -1,0 +1,108 @@
+----------------------------------------------------------------
+Type: "sign-up"
+----------------------------------------------------------------
+
+C -> S 
+{
+    "type":String 
+    "userName":String
+    "password":String 
+}    
+
+S -> C 
+{
+    "type":String
+    "status":String 
+}    
+
+----------------------------------------------------------------
+Type: "sign-in"
+----------------------------------------------------------------
+
+C -> S 
+{
+    "type":String 
+    "userName":String
+    "password":String
+}
+
+S -> C 
+{
+    "type":String
+    "status":String 
+}  
+
+----------------------------------------------------------------
+Type: "send-message"
+----------------------------------------------------------------
+
+C -> S 
+{
+    "type":String 
+    "timeStamp":String // Proposed format "hh:mm" 
+    "from":String
+    "chat":List<String>  // The chat into which the message has been posted, specified by the list of users
+    "text":String 
+}
+
+S -> C
+// From client to server here means that the server sends this message to the people in the chat, except the sender of the message.
+// The sender of the message does not receive a reply from the server.
+{
+    "type":String 
+    "sender":String
+    "chat":List<String>  // The chat into which the message has been posted, specified by the list of users
+    "timeStamp":String // Proposed format "hh:mm" 
+    "text":String 
+}
+
+----------------------------------------------------------------
+Type: "online-list"
+----------------------------------------------------------------
+
+S -> C 
+{
+    "type":String
+    "list":List<String> 
+}  
+
+----------------------------------------------------------------
+Type: "close-chat"
+----------------------------------------------------------------
+
+S -> C 
+{
+    "type":String
+    "userName":String
+}  
+
+----------------------------------------------------------------
+Type: "get-history-list"
+----------------------------------------------------------------
+
+C -> S 
+{
+    "type":String
+} 
+
+S -> C 
+{
+    "type":String
+    "list":List<List<String>>
+}  
+
+----------------------------------------------------------------
+Type: "get-history"
+----------------------------------------------------------------
+
+C -> S 
+{
+    "type":String
+    "chat":List<String>
+} 
+
+S -> C 
+{
+    "type":String
+    "history":List<Message>
+}  

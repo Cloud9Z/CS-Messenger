@@ -1,0 +1,52 @@
+package client;
+
+import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Observer;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import message.ProtocolMessage;
+import server.Server;
+import server.ServerProtocol;
+import server.WorkerThread;
+
+
+public class ClientTest {
+	
+	
+
+	@Test
+	public void testListen1() throws IOException {
+		Client client = new Client();
+		DummyServer.start(52000);
+		client.connect("localhost",52000);
+		new Thread(new Runnable() {
+			public void run() {
+				client.listen();
+			}
+		}).start();
+		ServerProtocol sp = new ServerProtocol();
+		String signIn = sp.signIn("Login:1");
+		DummyObserver ob = new DummyObserver();
+		client.addObserver(ob);
+		DummyServer.send(signIn);
+		String expected = "Login:1";
+		String actual = ob.getResponse();
+		assertEquals(expected, actual);
+		client.disconnect();
+		DummyServer.stop();
+		
+	}
+
+
+
+}

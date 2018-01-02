@@ -1,0 +1,364 @@
+package gui;
+
+import java.awt.Frame;
+import java.awt.Image;
+import java.awt.event.WindowEvent;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
+
+import javax.swing.ImageIcon;
+
+import client.ClientInterface;
+import gui.dialogues.accountCreated;
+import gui.dialogues.errorMessageLogOut;
+import gui.dialogues.nicknameAlreadyTaken;
+import gui.dialogues.usernamePassNotCorrect;
+import gui.windows.ChatWindow;
+import gui.windows.HistoryWindow;
+import gui.windows.LogIn;
+import gui.windows.groupChat;
+import gui.windows.loggedIn;
+import gui.windows.selectUserHistory;
+import gui.windows.selectUsersGroupChat;
+import gui.windows.signUpScreen;
+import gui.windows.userChat;
+import message.Message;
+
+public class MessengerGUI implements Observer {
+	
+	private ClientInterface client;
+	private LogIn loginWindow;
+	private signUpScreen signUpWindow;
+	private loggedIn homeScreen; 
+	private selectUserHistory historySelectionScreen;
+	private selectUsersGroupChat groupChatSelectionScreen;
+	private Set<userChat> userChats;
+	private Set<groupChat> groupChats;
+	private Set<HistoryWindow> historyWindows;
+	private String user;
+	private accountCreated accountSuccess;
+	private nicknameAlreadyTaken nickUnavailable;
+	private usernamePassNotCorrect userPassWrong;
+	private errorMessageLogOut errorMessage;
+	private boolean loggedOut;
+	private Image logo;
+	
+	
+	public MessengerGUI(ClientInterface client) {
+		this.client = client;
+		this.userChats = new HashSet<userChat>();
+		this.groupChats = new HashSet<groupChat>();
+		this.historyWindows= new HashSet<HistoryWindow>();
+		this.logo = new ImageIcon(getClass().getResource("/gui/images/1489279158_Paper-Plane.png")).getImage();
+	}
+	
+	public void startGUI() {
+		loginWindow = new LogIn(this);
+		loginWindow.setVisible(true);
+	}
+	
+	@Override
+	public void update(Observable arg0, Object arg1) {
+		String status = arg1.toString();
+		switch(status) {
+		case "Account:1":
+			if(accountSuccess == null) {
+				accountSuccess = new accountCreated(this, signUpWindow, true);
+			}
+			accountSuccess.setVisible(true);
+			break;
+		case "Account:-1":
+			if(nickUnavailable == null) {
+				nickUnavailable = new nicknameAlreadyTaken(this);
+			}
+			nickUnavailable.setVisible(true);
+			break;
+		case "Login:1":
+			// Login screen disappears
+			// Home screen is created (show empty only list)
+			loginWindow.setVisible(false);
+			homeScreen = new loggedIn(this);
+			homeScreen.setVisible(false);
+			break;
+		case "Login:-1":
+			userPassWrong = new usernamePassNotCorrect(loginWindow, true);
+			userPassWrong.setVisible(true);	
+			break;
+		case "Online:1":
+			Set<String> onlineList = client.getOnlineList();
+			homeScreen.displayOnlineList(onlineList);
+			homeScreen.setVisible(true);
+			break;
+		case "Chat:1":
+			displayMessage(client.getNextMessage());
+			break;
+		case "Chat:2":
+			closeGroupChat(client.nextGroupChatToClose());
+			break;
+		case "Offline:1":
+			handleOfflineNotification(client.nextOfflineNotification());
+			break;
+		case "History:1":
+			showHistorySelectionScreen(client.getHistoryList());
+			break;
+		case "History:2":
+			showNewHistoryWindow(client.getNextHistory());
+			break;
+		case "Login:-2":
+			System.err.println("User is already logged in...");
+		case "Connection:1":
+			handleClientError();
+			break;
+		}
+		
+	}
+	
+	private void handleClientError() {
+		// Do not handle errors after logout
+		if(loggedOut) {
+			return;
+		}
+		Frame parent = homeScreen;
+		if(homeScreen == null) {
+			if(loginWindow.isVisible()) {
+				parent = loginWindow;
+			} else if(signUpWindow.isVisible()) {
+				parent = signUpWindow;
+			} else {
+				System.err.println("Cannot display error dialogue.");
+			}
+		}
+		errorMessage = new errorMessageLogOut(this, parent, true);
+		errorMessage.setVisible(true);
+	}
+
+	private void showNewHistoryWindow(List<Message> nextHistory) {
+		HistoryWindow newWindow = new HistoryWindow(this, nextHistory);
+		newWindow.setVisible(true);
+	}
+
+	private void showHistorySelectionScreen(List<Set<String>> historyList) {
+    	if(historySelectionScreen == null) {
+    		historySelectionScreen = new selectUserHistory(this, homeScreen, true);
+    	}
+		historySelectionScreen.displayHistoryList(historyList);
+    	historySelectionScreen.setVisible(true);	
+	}
+
+	private void handleOfflineNotification(String offlineUser) {
+		for(groupChat chat : groupChats){
+			Set<String> members = chat.getMembers();
+			if(members.contains(offlineUser)) {
+				chat.handleClosingEvent();
+			}
+		}
+		for(userChat chat: userChats) {
+			if(chat.getOtherUser().equals(offlineUser)) {
+				chat.handleUserOffline();
+			}
+		}
+	}
+
+	private void closeGroupChat(Set<String> nextGroupChatToClose) {
+		for(groupChat chat : groupChats) {
+			if(chat.getMembers().equals(nextGroupChatToClose)) {
+				chat.handleClosingEvent();
+			}
+		}
+		
+	}
+
+	private void displayMessage(Message message) {
+		boolean chatIsOpen = false;
+		Set<String> chat = message.getChat();
+		for(ChatWindow window : (chat.size() == 2 ? userChats : groupChats)) {
+			Set<String> members = window.getMembers();
+			if(members.equals(chat)) {
+				window.displayMessage(message);
+				chatIsOpen = true;
+			}
+		}
+		if(!chatIsOpen) {
+			if(chat.size() == 2) {
+				String otherUser = "";
+				for(String userName : chat) {
+					if(!userName.equals(user)) {
+						otherUser = userName;
+					}
+				}
+				userChat newUserChat = new userChat(this, otherUser);
+				newUserChat.displayMessage(message);
+				newUserChat.setVisible(true);
+			} else {
+				groupChat newGroupChat = new groupChat(this, chat);
+				newGroupChat.displayMessage(message);
+				newGroupChat.setVisible(true);
+			}
+		}
+	}
+
+	public void registerUserChat(userChat chat) {
+		userChats.add(chat);
+	}
+	
+	public void registerGroupChat(groupChat chat) {
+		groupChats.add(chat);
+	}
+	
+	public void registerHistoryWindow(HistoryWindow window) {
+		historyWindows.add(window);
+	}
+	
+	public void deregisterUserChat(userChat chat) {
+		userChats.remove(chat);
+	}
+	
+	public void deregisterGroupChat(groupChat chat) {
+		groupChats.remove(chat);
+	}
+	
+	public void deregisterHistoryWindow (HistoryWindow window) {
+		historyWindows.remove(window);
+	}
+
+	/**
+	 * @return the user
+	 */
+	public String getUser() {
+		return user;
+	}
+
+	/**
+	 * @param user the user to set
+	 */
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	/**
+	 * @return the client
+	 */
+	public ClientInterface getClient() {
+		return client;
+	}
+
+	/**
+	 * @param historySelectionScreen the historySelectionScreen to set
+	 */
+	public void setHistorySelectionScreen(selectUserHistory historySelectionScreen) {
+		this.historySelectionScreen = historySelectionScreen;
+	}
+
+	/**
+	 * @return the signUpWindow
+	 */
+	public signUpScreen getSignUpWindow() {
+		return signUpWindow;
+	}
+
+	/**
+	 * @param signUpWindow the signUpWindow to set
+	 */
+	public void setSignUpWindow(signUpScreen signUpWindow) {
+		this.signUpWindow = signUpWindow;
+	}
+
+	/**
+	 * @return the homeScreen
+	 */
+	public loggedIn getHomeScreen() {
+		return homeScreen;
+	}
+
+	/**
+	 * @param homeScreen the homeScreen to set
+	 */
+	public void setHomeScreen(loggedIn homeScreen) {
+		this.homeScreen = homeScreen;
+	}
+	
+	public void logOut() {
+		System.err.println("GUI is shutting down...");
+		// Indicate that GUI is shutting down so that frames can react appropriately
+		loggedOut = true;
+		for(Frame frame : Frame.getFrames()) {
+			frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+		}
+		// Client needs to log out after frames have been closed so that chat closing notifications are dispatched
+		client.logOut();
+	}
+
+	/**
+	 * @return the loginWindow
+	 */
+	public LogIn getLoginWindow() {
+		return loginWindow;
+	}
+
+	/**
+	 * @param loginWindow the loginWindow to set
+	 */
+	public void setLoginWindow(LogIn loginWindow) {
+		this.loginWindow = loginWindow;
+	}
+
+	/**
+	 * @return the accountSuccess
+	 */
+	public accountCreated getAccountSuccess() {
+		return accountSuccess;
+	}
+
+	/**
+	 * @param accountSuccess the accountSuccess to set
+	 */
+	public void setAccountSuccess(accountCreated accountSuccess) {
+		this.accountSuccess = accountSuccess;
+	}
+
+	/**
+	 * @return the groupChatSelectionScreen
+	 */
+	public selectUsersGroupChat getGroupChatSelectionScreen() {
+		return groupChatSelectionScreen;
+	}
+
+	/**
+	 * @param groupChatSelectionScreen the groupChatSelectionScreen to set
+	 */
+	public void setGroupChatSelectionScreen(selectUsersGroupChat groupChatSelectionScreen) {
+		this.groupChatSelectionScreen = groupChatSelectionScreen;
+	}
+
+	/**
+	 * @return the historySelectionScreen
+	 */
+	public selectUserHistory getHistorySelectionScreen() {
+		return historySelectionScreen;
+	}
+
+	/**
+	 * @return the loggedOut
+	 */
+	public boolean isLoggedOut() {
+		return loggedOut;
+	}
+
+	/**
+	 * @param loggedOut the loggedOut to set
+	 */
+	public void setLoggedOut(boolean loggedOut) {
+		this.loggedOut = loggedOut;
+	}
+
+	/**
+	 * @return the logo
+	 */
+	public Image getLogo() {
+		return logo;
+	}
+	
+}

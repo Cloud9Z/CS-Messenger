@@ -1,0 +1,212 @@
+package server.db;
+
+import java.util.List;
+import java.util.Set;
+
+import message.Message;
+
+import java.io.IOException;
+	import java.net.ServerSocket;
+	import java.net.Socket;
+	import java.sql.*;
+	import java.text.SimpleDateFormat;
+	import java.time.LocalDateTime;
+	import java.time.format.DateTimeFormatter;
+	import java.util.ArrayList;
+	import java.util.Date;
+	import java.util.HashSet;
+	import java.util.List;
+	import java.util.Set;
+	import java.util.concurrent.ConcurrentSkipListSet;
+	import java.util.concurrent.ExecutorService;
+	import java.util.concurrent.Executors;
+	import java.util.*;
+
+public class DatabaseConnector implements DatabaseFunctions {
+	
+	/** sign up
+	     Check in DB whether user already exists: return false if the user already exists
+	     If the user does not yet exist, create a new record in the user table for the new user
+	 **/
+    @Override
+    public boolean signUp(String userName, String password) {
+            // TODO Auto-generated method stub
+            Connection conn = SQLSever.getConnection();
+            String sql = "insert into Users(User_id,Username,Password) values(?,?,?)";
+            PreparedStatement pstmt;
+            //System creates an user_id
+            String userid = "USERID"
+                            + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date())
+                            + new Random(3);
+            try {
+                    ResultSet rs = conn.prepareStatement(
+                                    "select * from Users where Username='" + userName + "'")
+                                    .executeQuery();// check whether the userName has already existed in the DB
+                    if (!rs.next()) {
+                            pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                            pstmt.setString(1, userid);
+                            pstmt.setString(2, userName);
+                            pstmt.setString(3, password);
+                            pstmt.executeUpdate();
+                            System.out.println("userName：" + userName);
+                            pstmt.close();
+                            conn.close();
+                    }
+            } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+            }
+            return true;
+    }
+
+	/** Sign in
+	   Checks in the DB whether there is a record with this username and password
+	   If yes, return true; else, return false
+	 **/
+    @Override
+    public boolean signIn(String userName, String password) {
+            // TODO Auto-generated method stub
+            Connection conn = SQLSever.getConnection();
+            String sql = "select * from Users where Username='" + userName
+                            + "' and Password='" + password + "'";
+            PreparedStatement pstmt;
+            try {
+                    pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                    ResultSet rs = pstmt.executeQuery();
+                    if (!rs.next()) {
+                            System.out.println("Password or ID is incorrect");
+                            return true;
+                    } else {
+                            System.out.println("Sign in successfully");
+                            return false;
+                    }
+            } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+            }
+    }
+
+    /** Get the list of users from the message
+       Check if a chat exists already containing these users
+        If not, create a new chat in the chat table
+         Create in the mapping table between chats and users, a record for each user that maps it to the chat
+        In every case, save message in message table, linking it to the chat ID
+    **/
+    @Override
+    public void saveMessage(Message message) {
+            // TODO Auto-generated method stub
+            Connection conn = SQLSever.getConnection();
+            String msgsql = "insert into Message(Message_id,from_id,chat_id,Content,Datetime) values(?,?,?,?,?)";
+            PreparedStatement msgpstmt, ucppstmt;
+            //System creates a message id
+            String messageid = "MSG"
+                            + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());//
+
+            Set<String> chat = message.getChat();//get the chat which message belongs to
+            List<Set<String>> list = new ArrayList<Set<String>>();
+            for (String username : chat) {//travelal all the userNames within that chat
+                    Set<String> chatset = SQLSever.getChatListByUser(username);// get chat Set from each user.
+                    list.add(chatset);
+            }
+
+            String chatid = SQLSever.findIntersection(list);// chat_id = intersection of chat set
+            try {
+
+                    msgpstmt = (PreparedStatement) conn.prepareStatement(msgsql);
+                    msgpstmt.setString(1, messageid);
+                    msgpstmt.setString(2, message.getSender());
+                    msgpstmt.setString(3, chatid);
+                    msgpstmt.setString(4, message.getText());
+                    DateTimeFormatter dtf = DateTimeFormatter
+                                    .ofPattern("yyyy-MM-dd HH:mm:ss");
+
+                    msgpstmt.setDate(5, new java.sql.Date(new Date().getTime()));
+                    msgpstmt.executeUpdate();
+                    msgpstmt.close();
+                    conn.close();
+
+            } catch (SQLException e) {
+                    e.printStackTrace();
+            }
+
+    }
+
+    /** Get the chat IDs of the chats that the user is part of
+         For each of those chat IDs, get the list of all users that are part of the chat
+         Return the list of the list of users for each chat
+      **/
+    @Override
+    public List<Set<String>> getHistoryList(String userName) {
+            // TODO Auto-generated method stub
+          // 首先要找到当前用户打开的所有chat
+            Set<String> chatset = SQLSever.getChatListByUser(userName);
+            // 再根据chat找到其下面的所有用户
+            List<Set<String>> list = new ArrayList<Set<String>>();
+            for (String chatid : chatset) {
+                    Set<String> users = SQLSever.getUsersByChat(chatid);
+                    list.add(users);
+            }
+            return list;
+    }
+
+    /**
+       Get the chat ID of the chat that contains all the users in the user list
+       From the message table, get all the messages for that chat ID
+     **/
+    @Override
+    public List<Message> getHistory(Set<String> users) {
+            // TODO Auto-generated method stub
+            // 找到用户所构成的聊天室的chatid
+            List<Set<String>> chatslist = new ArrayList<Set<String>>();
+            for (String username : users) {
+                    Set<String> chatset = SQLSever.getChatListByUser(username);
+                    chatslist.add(chatset);
+            }
+            String chatid = SQLSever.findIntersection(chatslist);
+
+            List<Message> msglist = new ArrayList<Message>();
+            Connection conn = SQLSever.getConnection();
+            String sql = "select * from Message where chat_id='" + chatid + "'";
+            PreparedStatement pstmt;
+            try {
+                    pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                    ResultSet rs = pstmt.executeQuery();
+                    while (rs.next()) {
+                            String from_id = rs.getString("from_id").toString();
+                            String Content = rs.getString("Content").toString();
+                            //long time = rs.getTimestamp("Datetime").getTime();
+                            LocalDateTime Timestamp = rs.getTimestamp(5).toLocalDateTime();
+                            Message msg = new Message(from_id, users, Timestamp, Content);
+                            msglist.add(msg);
+                    }
+            } catch (SQLException e) {
+                    e.printStackTrace();
+            }
+            return msglist;
+    }
+
+    /**
+      the method is to store user id and chat id in a map 
+     **/
+    public void saveUCMapping(String username, String chatid) {
+          // TODO Auto-generated method stub
+            Connection conn = SQLSever.getConnection();
+            String sql = "insert into UsersChatsMapping(UserChatsMapping_id,User_id,chat_id) values(?,?,?)";
+            PreparedStatement pstmt;
+            String userChatsMapping_id = "UCP"
+                            + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date())
+	                                + new Random(3);
+            try {
+                    pstmt = (PreparedStatement) conn.prepareStatement(sql);
+                    pstmt.setString(1, userChatsMapping_id);
+                    pstmt.setString(2, SQLSever.getIdByUserName(username));
+                    pstmt.setString(3, chatid);
+                    pstmt.executeUpdate();
+                    pstmt.close();
+                    conn.close();
+            } catch (SQLException e) {
+                    e.printStackTrace();
+            }
+    }
+}
+

@@ -1,0 +1,21 @@
+import java.util.Observable;
+import java.util.Observer;
+
+public interface LoginGUI extends Observer {
+	
+	/**
+	 * 
+	 * Precondition: 'arg' is of type Integer and has one of the following values:
+	 * 	 1: Login was successful
+	 * 	-1: Username does not exist or password incorrect 
+	 *  -2: Connection lost
+	 * 	-3: Other failure
+	 * 	-4: User already logged in
+	 * 
+	 * 'o' is of type 'Client'.
+	 * 
+	 */
+	@Override
+	public void update(Observable o, Object arg);
+	
+}

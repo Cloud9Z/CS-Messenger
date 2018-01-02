@@ -1,0 +1,261 @@
+package gui;
+
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
+import java.util.TreeSet;
+
+import client.Client;
+import gui.dialogues.accountCreated;
+import gui.dialogues.groupChatDisconnected;
+import gui.dialogues.nicknameAlreadyTaken;
+import gui.dialogues.usernamePassNotCorrect;
+import gui.windows.ChatWindow;
+import gui.windows.HistoryWindow;
+import gui.windows.LogIn;
+import gui.windows.groupChat;
+import gui.windows.loggedIn;
+import gui.windows.selectUserHistory;
+import gui.windows.selectUsersGroupChat;
+import gui.windows.signUpScreen;
+import gui.windows.userChat;
+import message.Message;
+
+public class MessengerGUI implements Observer {
+	
+	private Client client;
+	private LogIn loginWindow;
+	private signUpScreen signUpWindow;
+	private loggedIn homeScreen; 
+	private selectUserHistory historySelectionScreen;
+	private selectUsersGroupChat groupChatSelectionScreen;
+	private Set<userChat> userChats;
+	private Set<groupChat> groupChats;
+	private Set<HistoryWindow> historyWindows;
+	private String user;
+	private accountCreated accountSuccess;
+	private nicknameAlreadyTaken nickUnavailable;
+	private usernamePassNotCorrect userPassWrong;
+	private groupChatDisconnected chatDisconnect;
+	
+	
+	public MessengerGUI(Client client) {
+		this.client = client;
+		this.userChats = new TreeSet<userChat>();
+		this.groupChats = new TreeSet<groupChat>();
+		this.historyWindows= new TreeSet<HistoryWindow>();
+	}
+	
+	public void startGUI() {
+		loginWindow = new LogIn(this);
+	}
+	
+	@Override
+	public void update(Observable arg0, Object arg1) {
+		String status = arg1.toString();
+		switch(status) {
+		case "Account:1":
+			accountSuccess = new accountCreated(this, signUpWindow, true);
+			accountSuccess.setVisible(true);
+			break;
+		case "Account:-1":
+			nickUnavailable = new nicknameAlreadyTaken();
+			nickUnavailable.setVisible(true);
+			break;
+		case "Login:1":
+			// Login screen disappears
+			// Home screen is created (show empty only list)
+			homeScreen = new loggedIn(this);
+			homeScreen.setVisible(false);
+			break;
+		case "Login:-1":
+			userPassWrong = new usernamePassNotCorrect(loginWindow, true);
+			userPassWrong.setVisible(true);	
+			break;
+		case "Login:-2":
+			break;
+		case "Online:1":
+			Set<String> onlineList = client.getOnlineList();
+			homeScreen.displayOnlineList(onlineList);
+			homeScreen.setVisible(true);
+			break;
+		case "Chat:1":
+			displayMessage(client.getNextMessage());
+			break;
+		case "Chat:2":
+			closeGroupChat(client.nextGroupChatToClose());
+			break;
+		case "Offline:1":
+			handleOfflineNotification(client.nextOfflineNotification());
+			break;
+		case "History:1":
+			
+			break;
+		case "History:2":
+			break;
+		}
+		
+	}
+	
+	private void handleOfflineNotification(String offlineUser) {
+		for (groupChat chat : groupChats){
+			Set<String> members = chat.getMembers();
+			if(members.contains(offlineUser)) {
+				chatDisconnect = new groupChatDisconnected(chat, true);
+			}
+		}
+	}
+
+	private void closeGroupChat(Set<String> nextGroupChatToClose) {
+		for(groupChat chat : groupChats) {
+			if(chat.equals(nextGroupChatToClose)) {
+				chat.handleClosingEvent();
+			}
+		}
+		
+	}
+
+	private void displayMessage(Message message) {
+		Set<String> chat = message.getChat();
+		for(ChatWindow window : (chat.size() == 2 ? userChats : groupChats)) {
+			Set<String> members = window.getMembers();
+			if(members.equals(chat)) {
+				window.displayMessage(message);
+			}
+		}
+	}
+
+	public void registerUserChat(userChat chat) {
+		userChats.add(chat);
+	}
+	
+	public void registerGroupChat(groupChat chat) {
+		groupChats.add(chat);
+	}
+	
+	public void registerHistoryWindow(HistoryWindow window) {
+		historyWindows.add(window);
+	}
+	
+	public void deregisterUserChat(userChat chat) {
+		userChats.remove(chat);
+	}
+	
+	public void deregisterGroupChat(groupChat chat) {
+		groupChats.remove(chat);
+	}
+	
+	public void deregisterHistoryWindow (HistoryWindow window) {
+		historyWindows.remove(window);
+	}
+
+	/**
+	 * @return the user
+	 */
+	public String getUser() {
+		return user;
+	}
+
+	/**
+	 * @param user the user to set
+	 */
+	public void setUser(String user) {
+		this.user = user;
+	}
+
+	/**
+	 * @return the client
+	 */
+	public Client getClient() {
+		return client;
+	}
+
+	/**
+	 * @param historySelectionScreen the historySelectionScreen to set
+	 */
+	public void setHistorySelectionScreen(selectUserHistory historySelectionScreen) {
+		this.historySelectionScreen = historySelectionScreen;
+	}
+
+	/**
+	 * @return the signUpWindow
+	 */
+	public signUpScreen getSignUpWindow() {
+		return signUpWindow;
+	}
+
+	/**
+	 * @param signUpWindow the signUpWindow to set
+	 */
+	public void setSignUpWindow(signUpScreen signUpWindow) {
+		this.signUpWindow = signUpWindow;
+	}
+
+	/**
+	 * @return the homeScreen
+	 */
+	public loggedIn getHomeScreen() {
+		return homeScreen;
+	}
+
+	/**
+	 * @param homeScreen the homeScreen to set
+	 */
+	public void setHomeScreen(loggedIn homeScreen) {
+		this.homeScreen = homeScreen;
+	}
+	
+	public void logOut() {
+		
+	}
+
+	/**
+	 * @return the loginWindow
+	 */
+	public LogIn getLoginWindow() {
+		return loginWindow;
+	}
+
+	/**
+	 * @param loginWindow the loginWindow to set
+	 */
+	public void setLoginWindow(LogIn loginWindow) {
+		this.loginWindow = loginWindow;
+	}
+
+	/**
+	 * @return the accountSuccess
+	 */
+	public accountCreated getAccountSuccess() {
+		return accountSuccess;
+	}
+
+	/**
+	 * @param accountSuccess the accountSuccess to set
+	 */
+	public void setAccountSuccess(accountCreated accountSuccess) {
+		this.accountSuccess = accountSuccess;
+	}
+
+	/**
+	 * @return the groupChatSelectionScreen
+	 */
+	public selectUsersGroupChat getGroupChatSelectionScreen() {
+		return groupChatSelectionScreen;
+	}
+
+	/**
+	 * @param groupChatSelectionScreen the groupChatSelectionScreen to set
+	 */
+	public void setGroupChatSelectionScreen(selectUsersGroupChat groupChatSelectionScreen) {
+		this.groupChatSelectionScreen = groupChatSelectionScreen;
+	}
+
+	/**
+	 * @return the historySelectionScreen
+	 */
+	public selectUserHistory getHistorySelectionScreen() {
+		return historySelectionScreen;
+	}
+	
+}

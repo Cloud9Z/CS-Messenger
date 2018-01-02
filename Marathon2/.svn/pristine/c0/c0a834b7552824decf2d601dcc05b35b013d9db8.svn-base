@@ -1,0 +1,9 @@
+
+public class Bla {
+	
+	public static void main(String[] args) {
+		server.db.SQLSever.getConnection();
+		server.db.SQLSever.createBaseTables();
+	}
+	
+}

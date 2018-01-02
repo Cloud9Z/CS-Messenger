@@ -1,0 +1,105 @@
+package messenger;
+
+import static org.junit.Assert.*;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.junit.Test;
+
+public class ServerTest {
+
+	@Test
+	public void testAddMessageToOutgoingQueues() throws IOException {
+		Server s = new Server(12345);
+		Queue<Message> q1 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q2 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q3 = new ConcurrentLinkedQueue<Message>();
+		Queue<Message> q4 = new ConcurrentLinkedQueue<Message>();
+		String n1 = "nestor";
+		String n2 = "zeus";
+		String n3 = "athene";
+		String n4 = "hera";
+		s.registerMessageQueue(n1, q1);
+		s.registerMessageQueue(n2, q2);
+		s.registerMessageQueue(n3, q3);
+		s.registerMessageQueue(n4, q4);
+		Set<String> chat = new TreeSet<String>(Arrays.asList(new String[]{"zeus", "athene", "hera"}));
+		LocalDateTime t = LocalDateTime.of(2017, 4, 29, 23, 45);
+		Message m = new Message("zeus", chat, t, "Let there be thunder!");
+		s.addMessageToOutgoingQueues(m);
+		assertTrue(q1.isEmpty());
+		assertTrue(q2.isEmpty());
+		assertEquals(m, q3.remove());
+		assertEquals(m, q4.remove());
+		s.stop();
+	}
+	
+	@Test
+	public void testAddOfflineNotification() throws IOException {
+		Server s = new Server(12345);
+		Queue<String> q1 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q2 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q3 = new ConcurrentLinkedQueue<String>();
+		Queue<String> q4 = new ConcurrentLinkedQueue<String>();
+		s.registerOfflineQueue(q1);
+		s.registerOfflineQueue(q2);
+		s.registerOfflineQueue(q3);
+		s.registerOfflineQueue(q4);
+		String n1 = "nestor";
+		String n2 = "zeus";
+		String n3 = "athene";
+		String n4 = "hera";
+		s.addOfflineNotification(n1);
+		s.addOfflineNotification(n2);
+		s.addOfflineNotification(n3);
+		s.addOfflineNotification(n4);
+		assertEquals(n1, q1.remove());
+		assertEquals(n2, q1.remove());
+		assertEquals(n3, q1.remove());
+		assertEquals(n4, q1.remove());
+		assertEquals(n1, q2.remove());
+		assertEquals(n2, q2.remove());
+		assertEquals(n3, q2.remove());
+		assertEquals(n4, q2.remove());
+		assertEquals(n1, q3.remove());
+		assertEquals(n2, q3.remove());
+		assertEquals(n3, q3.remove());
+		assertEquals(n4, q3.remove());
+		assertEquals(n1, q4.remove());
+		assertEquals(n2, q4.remove());
+		assertEquals(n3, q4.remove());
+		assertEquals(n4, q4.remove());
+		assertTrue(q1.isEmpty());
+		assertTrue(q2.isEmpty());
+		assertTrue(q3.isEmpty());
+		assertTrue(q4.isEmpty());
+		s.stop();
+	}
+	
+	@Test
+	public void testAddToOnlineList() throws IOException {
+		String userName = "diomedes";
+		Server s = new Server(54320);
+		assertFalse(s.isOnline(userName));
+		s.addToOnlineList(userName);
+		assertTrue(s.isOnline(userName));
+		s.stop();
+	}
+	
+	@Test
+	public void testRemoveFromOnlineList() throws IOException {
+		String userName = "diomedes";
+		Server s = new Server(54320);
+		s.addToOnlineList(userName);
+		s.removeFromOnlineList(userName);
+		assertFalse(s.isOnline(userName));
+		s.stop();
+	}
+
+}

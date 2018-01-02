@@ -1,0 +1,166 @@
+package test.db;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import message.Message;
+import server.Server;
+import server.db.DatabaseFunctions;
+import server.db.SQLSever;
+
+/**
+ * Tests for database-related functionality.
+ * 
+ * @author Ruoyu He
+ * @version 2017-03-20
+ */
+public class TestDataFunction {
+	
+	/**
+	 * Tests for database-related functionality.
+	 * 
+	 * @param args
+	 * @throws ClassNotFoundException
+	 * @throws SQLException
+	 */
+    public static void main(String[] args) throws ClassNotFoundException, SQLException {
+
+        // Test: find chatid from message
+        List<Set<String>> list = createNewListSet();
+        String findid = SQLSever.findIntersection(list);
+        System.out.println("chatid" + findid);
+
+        //Test: Sign up
+
+        try {
+            Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            s.signUp("wangwu", "123");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } 
+
+        //Test: Sign in
+
+        try {
+        	Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            s.signIn("hushiyang", "123");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+        //Test：add a user in a chat
+
+        try {
+        	Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            s.saveUCMapping("hushiyang", "chat001");
+            s.saveUCMapping("zhangsan", "chat001");
+            s.saveUCMapping("lisi", "chat001");
+            s.saveUCMapping("wangwu", "chat001");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+        //Test:save message
+
+        try {
+        	Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            Set<String> chat = new HashSet<String>();
+            chat.add("zhangsan");
+            chat.add("lisi");
+            chat.add("wangwu");
+            chat.add("hushiyang");
+            Message msg = new Message("zhangsan",chat,LocalDateTime.now(),"Hello I am zhangsan2");
+            s.saveMessage(msg);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
+        //Test:getHistoryList
+
+        try {
+        	Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            List<Set<String>> userslist = s.getHistoryList("hushiyang");
+            for(Set<String> userset:userslist){
+                    for(String user :userset){
+                            System.out.println("user: "+user);
+                    }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+
+
+        //Test:getHistory（）
+
+        try {
+        	Server server = new Server(8081);
+    		DatabaseFunctions s = server.getDatabaseFunctions();
+            Set<String> chat = new HashSet<String>();
+            chat.add("zhangsan");
+            chat.add("lisi");
+            chat.add("wangwu");
+            chat.add("hushiyang");
+            List<Message> msg = s.getHistory(chat);
+            System.out.println("=========This is chat history==========");
+            for(Message m: msg){
+                    System.out.println(m.toString());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * Create new set
+     * 
+     * @return the set
+     */
+    public static List<Set<String>> createNewListSet() {
+        Set<String> set1 = new HashSet<String>();
+        set1.add("string1");
+        set1.add("string2");
+        set1.add("string0");
+        set1.add("string3");
+        Set<String> set2 = new HashSet<String>();
+        set2.add("string21");
+        set2.add("string22");
+        set2.add("string20");
+        set2.add("string0");
+        Set<String> set3 = new HashSet<String>();
+        set3.add("string0");
+        set3.add("string32");
+        set3.add("string30");
+        set3.add("string33");
+        Set<String> set4 = new HashSet<String>();
+        set4.add("string41");
+        set4.add("string0");
+        set4.add("string40");
+        set4.add("string43");
+
+        List<Set<String>> list = new ArrayList<Set<String>>();
+        list.add(set1);
+        list.add(set2);
+        list.add(set3);
+        list.add(set4);
+
+        return list;
+    }
+}

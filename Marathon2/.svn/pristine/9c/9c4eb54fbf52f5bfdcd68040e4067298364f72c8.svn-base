@@ -1,0 +1,41 @@
+package client;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.BindException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+
+import message.ProtocolMessage;
+import server.ServerProtocol;
+
+public class DummyServer {
+
+	private static PrintWriter dos = null;
+	
+	public static void send(String json) {
+		dos.println(json);
+	}
+	
+	public static void start(int port) {
+		try {
+			ServerSocket ss = new ServerSocket(port);
+			//while(true) {
+				Socket s = ss.accept();	
+				dos = new PrintWriter(s.getOutputStream(), true);
+			//}
+		} catch (BindException e) {
+			System.exit(0);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void stop() {
+		dos.close();
+	}
+	
+}

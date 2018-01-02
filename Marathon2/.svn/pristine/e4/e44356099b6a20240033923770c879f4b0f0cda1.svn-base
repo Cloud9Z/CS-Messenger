@@ -1,0 +1,236 @@
+package messenger;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Queue;
+import java.util.Set;
+
+//import java.util.List;
+//import java.net.SocketException;
+//import java.io.EOFException;
+
+public class Client extends Observable implements ClientInterface {
+	
+	
+	Socket s = null;
+	PrintWriter dos = null;
+	BufferedReader dis = null;
+	private boolean bConnected = false;
+	Set<String> onlineList;
+	List<Set<String>> historyList;
+	List<Message> nextHistory;
+	Message message;
+	Queue<Set<String>> groupChatsToBeClosed = new LinkedList<Set<String>>();
+	Queue<String> nextOfflineNotification = new LinkedList<String>();
+	Queue<Message> getNextMessage = new LinkedList<Message>();
+	Queue<List<Message>> getHistory = new LinkedList<List<Message>>();
+	
+	public void connect(String hostName, int port) throws IOException {
+		try {
+			s = new Socket(hostName, port);
+			dos = new PrintWriter(s.getOutputStream(), true);
+			dis = new BufferedReader(new InputStreamReader(s.getInputStream()));
+			System.out.println("connected!");
+			bConnected = true;
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void disconnect() {
+		try {
+			dos.close();
+			dis.close();
+			s.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void listen() {
+		String json, type;
+		ProtocolMessage pm;
+		try {
+			while((json = dis.readLine()) != null) {
+				pm = ClientProtocol.decode(json);
+				type = pm.getType();
+				switch(type) {
+				case "sign-in":
+				case "sign-up":
+					setChanged();
+					notifyObservers(pm.getStatus());
+					break;
+				case "send-message":
+					message = pm.getMessage();
+					setChanged();
+					notifyObservers("Chat:1");
+					break;
+				case "online-list":
+					onlineList = pm.getOnlineList();
+					setChanged();
+					notifyObservers("Online:1");
+					break;
+				case "close-group-chat":
+					// You need a Queue<Set<String>> groupChatsToBeClosed and add
+					// pm.getChat() to the queue. Do that using queue.add(pm.getChat()) .
+					// In method nextGroupChatToClose you need to return the next element from 
+					// the queue. You do that by method poll() of the queue, e.g. 
+					// return queue.poll();
+					groupChatsToBeClosed.add(pm.getChat());
+					setChanged();
+					notifyObservers("Chat:2");
+					break;
+				case "offline-notification":
+					// You need a Queue<String> offlieNotifications and add pm.getUserName() to
+					// the queue. In method nextOfflineNotification() you need to return the
+					// next element from there queue.
+					nextOfflineNotification.add(pm.getUserName());
+					setChanged();
+					notifyObservers("Offline:1");
+				case "get-history-list":
+					// You need a field variable List<Set<String>> historyList and store
+					// pm.getHistoryList() in there. In method getHistoryList you return
+					// the content of that field variable.
+					historyList = pm.getHistoryList();
+					setChanged();
+					notifyObservers("History:1");
+					break;
+				case "get-history":
+					// You need a queue of List<Message> as a field variable
+					// You need to add pm.getHistory() to the queue
+					// In method getNextHistory() you need to return the next element 
+					// from the queue.
+					getHistory.add(pm.getHistory());
+					setChanged();
+					notifyObservers("History:2");
+					break;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * Precondition: userName and password are not null and not empty.
+	 * 
+	 * @param userName
+	 * @param password
+	 */
+	public void createAccount(String userName, String password) {
+		dos.println(ClientProtocol.signUp(userName, password));
+		//dos.flush();
+		dos.close();
+	};
+	
+	/**
+	 * Precondition: userName and password are not null and not empty.
+	 * 
+	 * @param userName
+	 * @param password
+	 */
+	public void login(String userName, String password) {
+		dos.println(ClientProtocol.signIn(userName, password));
+		dos.close();
+	};
+	
+	
+	/**
+	 * 
+	 * @param message
+	 */
+	public void sendMessage(Message message) {
+			//System.out.println(s);
+		dos.println(ClientProtocol.sendMessage(message));
+
+	};
+	
+
+	/**
+	 * Precondition: The user is logged in and the client has received an online list from the server.
+	 * Postcondition: If no user is online, the empty set is returned, else the set of online users is returned.
+	 * 
+	 * @return
+	 */
+	public Set<String> getOnlineList() {
+		return onlineList;
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void requestHistoryList() {
+		dos.println(ClientProtocol.getHistoryList());
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public List<Set<String>> getHistoryList() {
+		return historyList;
+	};
+
+	/**
+	 * 
+	 * @param users
+	 */
+	@Override
+	public void requestHistory(Set<String> users) {
+		dos.println(ClientProtocol.getHistory(users));
+	};
+
+	@Override
+	public List<Message> getNextHistory() {
+		return nextHistory;
+	}
+	
+	/**
+	 * Precondition: Client has informed GUI that new message has arrived
+	 * Postcondition: Returns the next message
+	 * 
+	 * @return
+	 */
+	
+	@Override
+	public Message getNextMessage() {
+		// return next message from queue
+		return getNextMessage.poll();
+	};
+
+	@Override
+	public Set<String> nextGroupChatToClose() {
+		return groupChatsToBeClosed.poll();
+	}
+
+	@Override
+	public String nextOfflineNotification() {
+		return nextOfflineNotification.poll();
+	}
+
+	@Override
+	public void closeGroupChat(Set<String> users) {
+		dos.println(ClientProtocol.closeGroupChat(users));
+		
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void logOut() {
+		
+	}
+	
+}

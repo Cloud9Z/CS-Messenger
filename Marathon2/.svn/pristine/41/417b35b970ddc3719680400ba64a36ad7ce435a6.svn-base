@@ -1,0 +1,14 @@
+package server.db;
+import java.sql.SQLException;
+
+/*
+ * 
+ */
+public class CreateTables {
+	
+	public static void main(String[] args) throws ClassNotFoundException, SQLException {
+		server.db.SQLSever.getConnection();
+		server.db.SQLSever.createBaseTables();
+	}
+	
+}

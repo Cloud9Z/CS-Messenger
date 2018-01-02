@@ -1,0 +1,38 @@
+package messenger;
+
+import java.util.List;
+import java.util.Set;
+
+/**
+ * 
+ *
+ * @author Jochen Stuber
+ * @version 2017-03-07
+ */
+public interface DatabaseFunctions {
+	
+    // 1. Check in DB whether user already exists: return false if the user already exists 
+    // 2. If the user does not yet exist, create a new record in the user table for the new user 
+    public boolean signUp(String userName, String password);
+    
+    // Checks in the DB whether there is a record with this username and password 
+    // If yes, return true; else, return false 
+    public boolean signIn(String userName, String password);
+    
+    // Get the list of users from the message
+    // Check if a chat exists already containing these users 
+    // If not, create a new chat in the chat table 
+    //  Create in the mapping table between chats and users, a record for each user that maps it to the chat 
+    // In every case, save message in message table, linking it to the chat ID 
+    public void saveMessage(Message message);
+    
+    // Get the chat IDs of the chats that the user is part of 
+    // For each of those chat IDs, get the list of all users that are part of the chat 
+    // Return the list of the list of users for each chat 
+    public List<Set<String>> getHistoryList(String userName);
+    
+    // Get the chat ID of the chat that contains all the users in the user list 
+    // From the message table, get all the messages for that chat ID 
+    public List<Message> getHistory(Set<String> users);
+	
+}

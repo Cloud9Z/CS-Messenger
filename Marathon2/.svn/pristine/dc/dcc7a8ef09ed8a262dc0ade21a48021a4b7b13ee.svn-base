@@ -1,0 +1,15 @@
+package gui.windows;
+
+import java.util.Set;
+
+import message.Message;
+
+public interface ChatWindow {
+	
+	public void displayMessage(Message message);
+	
+	public Set<String> getMembers();
+	
+	public void close();
+	
+}

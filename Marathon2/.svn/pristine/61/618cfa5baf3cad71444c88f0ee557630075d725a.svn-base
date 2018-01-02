@@ -1,0 +1,72 @@
+import java.util.List;
+
+public interface Client {
+	
+	/**
+	 * Precondition: userName and password are not null and not empty.
+	 * 
+	 * @param userName
+	 * @param password
+	 */
+	public void createAccount(String userName, String password);
+	
+	/**
+	 * Precondition: userName and password are not null and not empty.
+	 * 
+	 * @param userName
+	 * @param password
+	 */
+	public void login(String userName, String password);
+	
+	/**
+	 * Precondition: The user is logged in and the client has received an online list from the server.
+	 * Postcondition: If no user is online, the empty list is returned, else the list of online users is returned.
+	 * 
+	 * @return
+	 */
+	public List<User> getOnlineList();
+	
+	/**
+	 * Precondition: 'users' is not null. It contains one or multiple users from the online list (in case of group chats).
+	 * Postcondition: Client has contacted the server to initiate a new chat with the specified users. 
+	 * 
+	 * 
+	 * @param users
+	 */
+	// public void createChat(List<User> users);
+	
+	/**
+	 * Precondition: A chat with 'chatID'exists in the client
+	 * Postcondition: The method returns the object representing the chat.
+	 * 
+	 * @return
+	 */
+	// public Chat getChat(long chatID);
+	
+	/**
+	 * 
+	 * @param message
+	 */
+	public void sendMessage(Message message);
+	
+	/**
+	 * Precondition: Client has informed GUI that new message has arrived
+	 * Postcondition: Returns the next message
+	 * 
+	 * @return
+	 */
+	public Message getNextMessage();
+	
+	public List<User> nextChatToClose();
+	
+	public void requestHistoryList();
+	
+	public List<List<User>> getHistoryList();
+	
+	public void requestHistory(List<User> users);
+	
+	public void getNextHistory();
+	
+	public void logOut();
+	
+}

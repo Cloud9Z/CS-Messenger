@@ -1,0 +1,11 @@
+package messenger;
+
+/**
+ * 
+ *
+ * @author 
+ * @version 2017-03-09
+ */
+public class ServerProtocol {
+
+}
